@@ -1,17 +1,19 @@
 [tool.poetry]
 name = "ai-clinical-llm-gateway"
 version = "0.1.0"
-description = ""
-authors = ["NefariousNiru <nirupomboseroy99@gmail.com>"]
+description = "The LLM gateway for the AI-Clinical-Backend"
+authors = ["Nirupom Bose Roy <nirupomboseroy99@gmail.com>"]
 readme = "README.md"
+license = "LICENSE.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
 grpcio = "^1.74.0"
 pydantic = "^2.11.7"
 grpcio-tools = "^1.74.0"
-uvloop = "^0.21.0"
+uvloop = { version = "^0.21.0", markers = "platform_system != 'Windows'" }
 python-dotenv = "^1.1.1"
+black = "^25.1.0"
 
 
 [build-system]
