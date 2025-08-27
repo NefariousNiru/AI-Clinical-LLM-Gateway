@@ -1,0 +1,27 @@
+# gateway/config/settings.py
+import sys
+from dotenv import load_dotenv
+from pydantic.v1 import BaseSettings, Field
+
+load_dotenv()
+
+
+class Settings(BaseSettings):
+    host: str = Field("0.0.0.0", env="GATEWAY_HOST")
+    port: int = Field(50051, env="GATEWAY_PORT")
+    timeout_sec: float = Field(30.0, env="GATEWAY_TIMEOUT_SEC")
+    tls_enabled: bool = Field(False, env="GATEWAY_TLS")
+    openai_api_key: str = Field(..., env="OPENAI_API_KEY")
+    model_temperature: float = Field(0, env="MODEL_TEMPERATURE")
+    log_level: str = Field("INFO", env="LOG_LEVEL")
+    # add cert paths later if you enable TLS
+
+
+try:
+    settings = Settings()
+except Exception as e:
+    print(
+        f"❌ Settings initialization failed in ./gateway/config/setting.py: {e}",
+        file=sys.stderr,
+    )
+    sys.exit(1)

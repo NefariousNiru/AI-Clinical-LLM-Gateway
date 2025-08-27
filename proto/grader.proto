@@ -69,15 +69,16 @@ message GradeRequest {
 
   string system_prompt = 3;
   string user_prompt_template = 4;
-  string model_name = 5;
-
-  string trace_id = 6;                    // optional passthrough
-  string job_id = 7;                      // optional passthrough
+  string model_provider = 5;
+  string model_name = 6;
+  string trace_id = 7;                    // optional passthrough
+  string job_id = 8;                      // optional passthrough
 }
 
 message GradeResponse {
   repeated ProblemFeedback feedback = 1;  // same length/order as request.problems
-  string model_name = 2;                  // actual model used
+  string model_provider = 2;              // model provider used
+  string model_name = 3;                  // actual model used
 }
 
 // Errors travel via gRPC status, with gateway placing a string code in metadata:

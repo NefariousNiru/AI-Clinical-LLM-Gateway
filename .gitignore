@@ -44,7 +44,7 @@ instance/
 # Your current raw logs and LLM artifacts - do NOT commit PHI
 /logs/
 /test/
-
+/transformers/
 # Config & secrets
 .env
 .env.*

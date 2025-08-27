@@ -1,4 +1,4 @@
-# gateway/providers/interface.py
+# gateway/interface/provider_interface.py
 from typing import Protocol, List
 from gateway.grader.v1 import grader_pb2
 
