@@ -1,6 +1,5 @@
 # gateway/providers/ollama_provider.py
 from typing import List
-
 from gateway.grader.v1 import grader_pb2
 from gateway.interface.provider_interface import Provider
 
