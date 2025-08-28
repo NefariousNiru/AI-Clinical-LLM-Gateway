@@ -34,6 +34,10 @@ class OllamaProvider(Provider):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
+            format="json",
+            options={
+                "temperature" : settings.model_temperature,
+            }
         )
 
         # Extract the assistant message text
