@@ -11,9 +11,10 @@ class Settings(BaseSettings):
     port: int = Field(50051, env="GATEWAY_PORT")
     timeout_sec: float = Field(30.0, env="GATEWAY_TIMEOUT_SEC")
     tls_enabled: bool = Field(False, env="GATEWAY_TLS")
-    openai_api_key: str = Field(..., env="OPENAI_API_KEY")
+    openai_api_key: str | None = Field(None, env="OPENAI_API_KEY")
     model_temperature: float = Field(0, env="MODEL_TEMPERATURE")
     log_level: str = Field("INFO", env="LOG_LEVEL")
+    ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
     # add cert paths later if you enable TLS
 
 

@@ -71,6 +71,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             )
 
         # Resolve provider (throws if unsupported)
+        print(request.model_provider)
         provider: Provider = get_provider(request.model_provider)
 
         # Delegate grading
@@ -86,5 +87,6 @@ class GraderService(grader_pb2_grpc.GraderServicer):
 
         return grader_pb2.GradeResponse(
             feedback=feedback_items,
+            model_provider=request.model_provider,
             model_name=request.model_name or "dummy-model",
         )

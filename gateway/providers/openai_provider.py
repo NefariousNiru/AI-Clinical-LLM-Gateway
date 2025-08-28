@@ -10,10 +10,13 @@ from gateway.config.settings import settings
 from gateway.grader.v1 import grader_pb2
 from gateway.grader.v1.grader_pb2 import DrugRelatedProblem, RubricPayload
 from gateway.interface.provider_interface import Provider
+from gateway.util import functions
 
 
 class OpenAIProvider(Provider):
     def __init__(self):
+        if not settings.openai_api_key:
+            raise RuntimeError("OPENAI_API_KEY must be set")
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     async def grade(
@@ -28,22 +31,17 @@ class OpenAIProvider(Provider):
         job_id: str,
     ) -> List[grader_pb2.ProblemFeedback]:
         # Serialize rubric + problems into JSON
-        rubric_dict, problems_dict = self._serialize(rubric, problems)
+        rubric_dict, problems_dict = functions.serialize(rubric, problems)
 
         # Create prompt
-        prompt = self._create_prompt(user_prompt_template, rubric_dict, problems_dict)
+        prompt = functions.create_prompt(
+            user_prompt_template, rubric_dict, problems_dict
+        )
         print(system_prompt + prompt)
 
         # get response
         response = await self._get_response(model_name, system_prompt, prompt)
         return self._parse_response(response=response)
-
-    @staticmethod
-    def _create_prompt(user_prompt_template: str, rubric_dict: dict, problems_dict):
-        return user_prompt_template.format(
-            rubric_json=json.dumps(rubric_dict, ensure_ascii=False, indent=2),
-            problems_json=json.dumps(problems_dict, ensure_ascii=False, indent=2),
-        )
 
     async def _get_response(self, model_name: str, system_prompt: str, prompt: str):
         return await self.client.chat.completions.create(
@@ -54,42 +52,6 @@ class OpenAIProvider(Provider):
             ],
             temperature=settings.model_temperature,
         )
-
-    @staticmethod
-    def _serialize(rubric: RubricPayload, problems: list[DrugRelatedProblem]):
-        rubric_dict = {
-            "rubric_id": rubric.rubric_id,
-            "guideline_hint": rubric.guideline_hint,
-            "sections": [
-                {
-                    "id": s.id,
-                    "title": s.title,
-                    "max_points": s.max_points,
-                    "evaluation_question": s.evaluation_question,
-                    "criteria": [
-                        {
-                            "key": c.key,
-                            "type": c.type,
-                            "verbiage": c.verbiage,
-                            "weight": c.weight if c.HasField("weight") else None,
-                        }
-                        for c in s.criteria
-                    ],
-                }
-                for s in rubric.sections
-            ],
-        }
-        problems_dict = [
-            {
-                "is_priority": p.is_priority,
-                "identification": p.identification,
-                "explanation": p.explanation,
-                "plan_recommendation": p.plan_recommendation,
-                "monitoring": p.monitoring,
-            }
-            for p in problems
-        ]
-        return rubric_dict, problems_dict
 
     @staticmethod
     def _parse_response(response) -> List[grader_pb2.ProblemFeedback]:
