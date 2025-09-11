@@ -9,7 +9,6 @@ load_dotenv()
 class Settings(BaseSettings):
     host: str = Field("0.0.0.0", env="GATEWAY_HOST")
     port: int = Field(50051, env="GATEWAY_PORT")
-    timeout_sec: float = Field(30.0, env="GATEWAY_TIMEOUT_SEC")
     tls_enabled: bool = Field(False, env="GATEWAY_TLS")
     openai_api_key: str | None = Field(None, env="OPENAI_API_KEY")
     model_temperature: float = Field(0, env="MODEL_TEMPERATURE")
