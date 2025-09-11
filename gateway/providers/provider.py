@@ -67,14 +67,15 @@ class Provider:
             print(feedback_model.model_dump())
         return feedback_models
 
-    async def _get_response(self, model_name: str, system_prompt: str, prompt: str):
+    async def _get_response(self, model_name: str, system_prompt: str, prompt: str) -> FeedbackEnvelope:
         return await self.client.chat.completions.create(
+            response_model=FeedbackEnvelope, # Coerce a Pydantic Model
             model=model_name,
             messages=[
                 ChatCompletionSystemMessageParam(role="system", content=system_prompt),
                 ChatCompletionUserMessageParam(role="user", content=prompt),
             ],
-            response_model=FeedbackEnvelope,
             temperature=settings.model_temperature,
             max_retries=settings.instructor_max_retry,
+            strict=True,
         )
