@@ -63,7 +63,8 @@ class Provider:
             raise ValueError(
                 f"schema_mismatch: expected {len(payload)} feedback, got {len(feedback_models)}"
             )
-
+        for feedback_model in feedback_models:
+            print(feedback_model.model_dump())
         return feedback_models
 
     async def _get_response(self, model_name: str, system_prompt: str, prompt: str):
