@@ -1,78 +1,39 @@
 syntax = "proto3";
-
 package grader.v1;
-
+import "google/protobuf/struct.proto";
 option csharp_namespace = "Grader.V1";
-
-// ---------- Rubric (structured) ----------
-
-enum CriterionType {
-  CRITERION_TYPE_UNSPECIFIED = 0;
-  MUST = 1;
-  SHOULD = 2;
-  BONUS = 3;
-  CONTRAINDICATION = 4;
-}
-
-message Criterion {
-  string key = 1;
-  CriterionType type = 2;
-  string verbiage = 3;           // 1..80 chars - enforce app side
-  optional double weight = 4;    // >0 when present
-}
-
-message Section {
-  string id = 1;
-  string title = 2;
-  double max_points = 3;
-  string evaluation_question = 4;
-  repeated Criterion criteria = 5;
-}
-
-message RubricPayload {
-  string rubric_id = 1;
-  string guideline_hint = 2;
-  repeated Section sections = 3;
-}
-
-// ---------- Request payloads ----------
-
-message DrugRelatedProblem {
-  bool is_priority = 1;
-  string identification = 2;
-  string explanation = 3;
-  string plan_recommendation = 4;
-  string monitoring = 5;
-}
 
 // ---------- Feedback (response) ----------
 
 message FeedbackSection {
-  string score = 1;        // keep as string to match your model
+  string score = 1;
   string evaluation = 2;
   string feedback = 3;
 }
 
 message ProblemFeedback {
-  bool is_priority = 1;
-  FeedbackSection identification = 2;
-  FeedbackSection explanation = 3;
-  FeedbackSection plan_recommendation = 4;
-  FeedbackSection monitoring = 5;
+  string name = 1;
+  bool is_priority = 2;
+  FeedbackSection identification = 3;
+  FeedbackSection explanation = 4;
+  FeedbackSection plan_recommendation = 5;
+  FeedbackSection monitoring = 6;
 }
 
 // ---------- RPC messages ----------
 
 message GradeRequest {
-  RubricPayload rubric = 1;               // structured rubric only
-  repeated DrugRelatedProblem problems = 2;
+  repeated google.protobuf.Struct rubrics = 1;   // open JSON
+  repeated google.protobuf.Struct payload = 2;   // open JSON
 
   string system_prompt = 3;
   string user_prompt_template = 4;
   string model_provider = 5;
   string model_name = 6;
-  string trace_id = 7;                    // optional passthrough
-  string job_id = 8;                      // optional passthrough
+
+  // passthroughs
+  string trace_id = 7;
+  string job_id = 8;
 }
 
 message GradeResponse {

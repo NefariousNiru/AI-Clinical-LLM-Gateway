@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     model_temperature: float = Field(0, env="MODEL_TEMPERATURE")
     log_level: str = Field("INFO", env="LOG_LEVEL")
     ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
+    instructor_max_retry: int = Field(3, env="INSTRUCTOR_MAX_RETRY")
     # add cert paths later if you enable TLS
 
 

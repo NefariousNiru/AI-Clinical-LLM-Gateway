@@ -1,39 +1,46 @@
 # gateway/providers/dummy_provider.py
-from typing import List
+from typing import List, Any, Dict
+from gateway.config.pydantic_models import ProblemFeedback
 from gateway.grader.v1 import grader_pb2
-from gateway.interface.provider_interface import Provider
 
-
-class DummyProvider(Provider):
-
+class DummyProvider:
+    """No-LLM provider that echoes basic structure back as ProblemFeedback."""
     @staticmethod
-    def _mk_section(head: str) -> grader_pb2.FeedbackSection:
+    def _mk_section(head: str | None) -> grader_pb2.FeedbackSection:
+        text = (head or "")
         return grader_pb2.FeedbackSection(
             score="0",
-            evaluation=f"auto-eval: {head[:32]}",
-            feedback=f"auto-feedback: {head[:64]}",
+            evaluation=f"auto-eval: {text[:32]}",
+            feedback=f"auto-feedback: {text[:64]}",
         )
 
     async def grade(
         self,
         *,
-        rubric: grader_pb2.RubricPayload,
-        problems: List[grader_pb2.DrugRelatedProblem],
+        rubrics: List[Dict[str, Any]],
+        payload: List[Dict[str, Any]],
         system_prompt: str,
         user_prompt_template: str,
         model_name: str,
         trace_id: str,
         job_id: str,
-    ) -> list[grader_pb2.ProblemFeedback]:
-        out: list[grader_pb2.ProblemFeedback] = []
-        for p in problems:
+    ) -> List[grader_pb2.ProblemFeedback]:
+        out: list[ProblemFeedback] = []
+
+        for p in payload:
             out.append(
-                grader_pb2.ProblemFeedback(
-                    is_priority=p.is_priority,
-                    identification=self._mk_section(p.identification),
-                    explanation=self._mk_section(p.explanation),
-                    plan_recommendation=self._mk_section(p.plan_recommendation),
-                    monitoring=self._mk_section(p.monitoring),
+                ProblemFeedback(
+                    name=str(p.get("name", "unknown_problem")),
+                    is_priority=bool(p.get("is_priority", False)),
+                    identification=self._mk_section(p.get("identification")),
+                    explanation=self._mk_section(p.get("explanation")),
+                    plan_recommendation=self._mk_section(p.get("plan_recommendation")),
+                    monitoring=self._mk_section(p.get("monitoring")),
                 )
             )
+
+        # Cardinality guard for safety (parity with other providers)
+        if len(out) != len(payload):
+            raise ValueError(f"schema_mismatch: expected {len(payload)} feedback, got {len(out)}")
+
         return out

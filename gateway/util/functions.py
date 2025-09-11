@@ -39,8 +39,8 @@ def serialize(rubric: RubricPayload, problems: list[DrugRelatedProblem]):
     return rubric_dict, problems_dict
 
 
-def create_prompt(user_prompt_template: str, rubric_dict: dict, problems_dict):
+def create_prompt(user_prompt_template: str, rubrics: list[dict], payload: list[dict]) -> str:
     return user_prompt_template.format(
-        rubric_json=json.dumps(rubric_dict, ensure_ascii=False, indent=2),
-        problems_json=json.dumps(problems_dict, ensure_ascii=False, indent=2),
+        rubrics_json=json.dumps(rubrics, ensure_ascii=False, indent=2),
+        payload_json=json.dumps(payload, ensure_ascii=False, indent=2),
     )

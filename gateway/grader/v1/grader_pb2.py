@@ -18,8 +18,11 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
+
+
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x0cgrader.proto\x12\tgrader.v1"r\n\tCriterion\x12\x0b\n\x03key\x18\x01 \x01(\t\x12&\n\x04type\x18\x02 \x01(\x0e\x32\x18.grader.v1.CriterionType\x12\x10\n\x08verbiage\x18\x03 \x01(\t\x12\x13\n\x06weight\x18\x04 \x01(\x01H\x00\x88\x01\x01\x42\t\n\x07_weight"}\n\x07Section\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x12\n\nmax_points\x18\x03 \x01(\x01\x12\x1b\n\x13\x65valuation_question\x18\x04 \x01(\t\x12&\n\x08\x63riteria\x18\x05 \x03(\x0b\x32\x14.grader.v1.Criterion"`\n\rRubricPayload\x12\x11\n\trubric_id\x18\x01 \x01(\t\x12\x16\n\x0eguideline_hint\x18\x02 \x01(\t\x12$\n\x08sections\x18\x03 \x03(\x0b\x32\x12.grader.v1.Section"\x87\x01\n\x12\x44rugRelatedProblem\x12\x13\n\x0bis_priority\x18\x01 \x01(\x08\x12\x16\n\x0eidentification\x18\x02 \x01(\t\x12\x13\n\x0b\x65xplanation\x18\x03 \x01(\t\x12\x1b\n\x13plan_recommendation\x18\x04 \x01(\t\x12\x12\n\nmonitoring\x18\x05 \x01(\t"F\n\x0f\x46\x65\x65\x64\x62\x61\x63kSection\x12\r\n\x05score\x18\x01 \x01(\t\x12\x12\n\nevaluation\x18\x02 \x01(\t\x12\x10\n\x08\x66\x65\x65\x64\x62\x61\x63k\x18\x03 \x01(\t"\xf4\x01\n\x0fProblemFeedback\x12\x13\n\x0bis_priority\x18\x01 \x01(\x08\x12\x32\n\x0eidentification\x18\x02 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection\x12/\n\x0b\x65xplanation\x18\x03 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection\x12\x37\n\x13plan_recommendation\x18\x04 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection\x12.\n\nmonitoring\x18\x05 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection"\xec\x01\n\x0cGradeRequest\x12(\n\x06rubric\x18\x01 \x01(\x0b\x32\x18.grader.v1.RubricPayload\x12/\n\x08problems\x18\x02 \x03(\x0b\x32\x1d.grader.v1.DrugRelatedProblem\x12\x15\n\rsystem_prompt\x18\x03 \x01(\t\x12\x1c\n\x14user_prompt_template\x18\x04 \x01(\t\x12\x16\n\x0emodel_provider\x18\x05 \x01(\t\x12\x12\n\nmodel_name\x18\x06 \x01(\t\x12\x10\n\x08trace_id\x18\x07 \x01(\t\x12\x0e\n\x06job_id\x18\x08 \x01(\t"i\n\rGradeResponse\x12,\n\x08\x66\x65\x65\x64\x62\x61\x63k\x18\x01 \x03(\x0b\x32\x1a.grader.v1.ProblemFeedback\x12\x16\n\x0emodel_provider\x18\x02 \x01(\t\x12\x12\n\nmodel_name\x18\x03 \x01(\t*f\n\rCriterionType\x12\x1e\n\x1a\x43RITERION_TYPE_UNSPECIFIED\x10\x00\x12\x08\n\x04MUST\x10\x01\x12\n\n\x06SHOULD\x10\x02\x12\t\n\x05\x42ONUS\x10\x03\x12\x14\n\x10\x43ONTRAINDICATION\x10\x04\x32\x44\n\x06Grader\x12:\n\x05Grade\x12\x17.grader.v1.GradeRequest\x1a\x18.grader.v1.GradeResponseB\x0c\xaa\x02\tGrader.V1b\x06proto3'
+    b'\n\x0cgrader.proto\x12\tgrader.v1\x1a\x1cgoogle/protobuf/struct.proto"F\n\x0f\x46\x65\x65\x64\x62\x61\x63kSection\x12\r\n\x05score\x18\x01 \x01(\t\x12\x12\n\nevaluation\x18\x02 \x01(\t\x12\x10\n\x08\x66\x65\x65\x64\x62\x61\x63k\x18\x03 \x01(\t"\x82\x02\n\x0fProblemFeedback\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0bis_priority\x18\x02 \x01(\x08\x12\x32\n\x0eidentification\x18\x03 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection\x12/\n\x0b\x65xplanation\x18\x04 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection\x12\x37\n\x13plan_recommendation\x18\x05 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection\x12.\n\nmonitoring\x18\x06 \x01(\x0b\x32\x1a.grader.v1.FeedbackSection"\xe5\x01\n\x0cGradeRequest\x12(\n\x07rubrics\x18\x01 \x03(\x0b\x32\x17.google.protobuf.Struct\x12(\n\x07payload\x18\x02 \x03(\x0b\x32\x17.google.protobuf.Struct\x12\x15\n\rsystem_prompt\x18\x03 \x01(\t\x12\x1c\n\x14user_prompt_template\x18\x04 \x01(\t\x12\x16\n\x0emodel_provider\x18\x05 \x01(\t\x12\x12\n\nmodel_name\x18\x06 \x01(\t\x12\x10\n\x08trace_id\x18\x07 \x01(\t\x12\x0e\n\x06job_id\x18\x08 \x01(\t"i\n\rGradeResponse\x12,\n\x08\x66\x65\x65\x64\x62\x61\x63k\x18\x01 \x03(\x0b\x32\x1a.grader.v1.ProblemFeedback\x12\x16\n\x0emodel_provider\x18\x02 \x01(\t\x12\x12\n\nmodel_name\x18\x03 \x01(\t2D\n\x06Grader\x12:\n\x05Grade\x12\x17.grader.v1.GradeRequest\x1a\x18.grader.v1.GradeResponseB\x0c\xaa\x02\tGrader.V1b\x06proto3'
 )
 
 _globals = globals()
@@ -28,24 +31,14 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "grader_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
     _globals["DESCRIPTOR"]._loaded_options = None
     _globals["DESCRIPTOR"]._serialized_options = b"\252\002\tGrader.V1"
-    _globals["_CRITERIONTYPE"]._serialized_start = 1171
-    _globals["_CRITERIONTYPE"]._serialized_end = 1273
-    _globals["_CRITERION"]._serialized_start = 27
-    _globals["_CRITERION"]._serialized_end = 141
-    _globals["_SECTION"]._serialized_start = 143
-    _globals["_SECTION"]._serialized_end = 268
-    _globals["_RUBRICPAYLOAD"]._serialized_start = 270
-    _globals["_RUBRICPAYLOAD"]._serialized_end = 366
-    _globals["_DRUGRELATEDPROBLEM"]._serialized_start = 369
-    _globals["_DRUGRELATEDPROBLEM"]._serialized_end = 504
-    _globals["_FEEDBACKSECTION"]._serialized_start = 506
-    _globals["_FEEDBACKSECTION"]._serialized_end = 576
-    _globals["_PROBLEMFEEDBACK"]._serialized_start = 579
-    _globals["_PROBLEMFEEDBACK"]._serialized_end = 823
-    _globals["_GRADEREQUEST"]._serialized_start = 826
-    _globals["_GRADEREQUEST"]._serialized_end = 1062
-    _globals["_GRADERESPONSE"]._serialized_start = 1064
-    _globals["_GRADERESPONSE"]._serialized_end = 1169
-    _globals["_GRADER"]._serialized_start = 1275
-    _globals["_GRADER"]._serialized_end = 1343
+    _globals["_FEEDBACKSECTION"]._serialized_start = 57
+    _globals["_FEEDBACKSECTION"]._serialized_end = 127
+    _globals["_PROBLEMFEEDBACK"]._serialized_start = 130
+    _globals["_PROBLEMFEEDBACK"]._serialized_end = 388
+    _globals["_GRADEREQUEST"]._serialized_start = 391
+    _globals["_GRADEREQUEST"]._serialized_end = 620
+    _globals["_GRADERESPONSE"]._serialized_start = 622
+    _globals["_GRADERESPONSE"]._serialized_end = 727
+    _globals["_GRADER"]._serialized_start = 729
+    _globals["_GRADER"]._serialized_end = 797
 # @@protoc_insertion_point(module_scope)
