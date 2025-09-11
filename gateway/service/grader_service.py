@@ -6,7 +6,6 @@ from gateway.config.pydantic_models import ProblemFeedback
 from gateway.grader.v1 import grader_pb2_grpc, grader_pb2
 from gateway.providers.provider import Provider, get_provider
 from google.protobuf import struct_pb2
-
 from gateway.providers.dummy_provider import DummyProvider
 from gateway.util.errors import TerminalError, TransientError
 
@@ -142,7 +141,9 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         )
 
     @staticmethod
-    def _parse_problem_feedback_to_stub(feedback_models: List[ProblemFeedback]) -> List[grader_pb2.ProblemFeedback]:
+    def _parse_problem_feedback_to_stub(
+        feedback_models: List[ProblemFeedback],
+    ) -> List[grader_pb2.ProblemFeedback]:
         feedback_items: List[grader_pb2.ProblemFeedback] = []
         for fb in feedback_models:
             feedback_items.append(

@@ -3,11 +3,13 @@ from typing import List, Any, Dict
 from gateway.config.pydantic_models import ProblemFeedback
 from gateway.grader.v1 import grader_pb2
 
+
 class DummyProvider:
     """No-LLM provider that echoes basic structure back as ProblemFeedback."""
+
     @staticmethod
     def _mk_section(head: str | None) -> grader_pb2.FeedbackSection:
-        text = (head or "")
+        text = head or ""
         return grader_pb2.FeedbackSection(
             score="0",
             evaluation=f"auto-eval: {text[:32]}",
@@ -41,6 +43,8 @@ class DummyProvider:
 
         # Cardinality guard for safety (parity with other providers)
         if len(out) != len(payload):
-            raise ValueError(f"schema_mismatch: expected {len(payload)} feedback, got {len(out)}")
+            raise ValueError(
+                f"schema_mismatch: expected {len(payload)} feedback, got {len(out)}"
+            )
 
         return out
