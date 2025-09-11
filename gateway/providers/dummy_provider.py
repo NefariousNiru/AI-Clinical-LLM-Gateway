@@ -1,16 +1,15 @@
 # gateway/providers/dummy_provider.py
 from typing import List, Any, Dict
-from gateway.config.pydantic_models import ProblemFeedback
-from gateway.grader.v1 import grader_pb2
+from gateway.config.pydantic_models import ProblemFeedback, FeedbackSection
 
 
 class DummyProvider:
     """No-LLM provider that echoes basic structure back as ProblemFeedback."""
 
     @staticmethod
-    def _mk_section(head: str | None) -> grader_pb2.FeedbackSection:
+    def _mk_section(head: str | None) -> FeedbackSection:
         text = head or ""
-        return grader_pb2.FeedbackSection(
+        return FeedbackSection(
             score="0",
             evaluation=f"auto-eval: {text[:32]}",
             feedback=f"auto-feedback: {text[:64]}",
@@ -26,7 +25,7 @@ class DummyProvider:
         model_name: str,
         trace_id: str,
         job_id: str,
-    ) -> List[grader_pb2.ProblemFeedback]:
+    ) -> List[ProblemFeedback]:
         out: list[ProblemFeedback] = []
 
         for p in payload:

@@ -75,7 +75,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         payload = [_struct_to_dict(s) for s in request.payload]
 
         # Resolve provider (throws if unsupported)
-        print("Model Requested: ", request.model_provider, request.model_name)
+        print("Model Requested: ", request.model_provider.upper(), request.model_name)
         raw_client: AsyncOpenAI | DummyProvider = get_provider(request.model_provider)
         if isinstance(raw_client, AsyncOpenAI):
             provider = Provider(raw_client=raw_client)
