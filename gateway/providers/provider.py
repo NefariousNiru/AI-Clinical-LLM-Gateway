@@ -68,14 +68,20 @@ class Provider:
         return feedback_models
 
     async def _get_response(self, model_name: str, system_prompt: str, prompt: str) -> FeedbackEnvelope:
-        return await self.client.chat.completions.create(
-            response_model=FeedbackEnvelope, # Coerce a Pydantic Model
+        print(system_prompt, prompt)
+        kwargs = dict(
+            response_model=FeedbackEnvelope,
             model=model_name,
             messages=[
                 ChatCompletionSystemMessageParam(role="system", content=system_prompt),
                 ChatCompletionUserMessageParam(role="user", content=prompt),
             ],
-            temperature=settings.model_temperature,
             max_retries=settings.instructor_max_retry,
             strict=True,
         )
+
+        # Only add temperature if model supports it
+        if "gpt-5" not in model_name.lower():
+            kwargs["temperature"] = settings.model_temperature
+
+        return await self.client.chat.completions.create(**kwargs)
