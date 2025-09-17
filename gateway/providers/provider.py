@@ -43,6 +43,7 @@ def get_provider(provider: str) -> AsyncOpenAI | DummyProvider:
 
 class Provider:
     """Schema-enforcing provider with transparent retries and analytics tracing."""
+
     def __init__(self, raw_client: AsyncOpenAI):
         self.client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
 
