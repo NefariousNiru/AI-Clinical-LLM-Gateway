@@ -1,7 +1,9 @@
+# gateway/config/pydantic_models.py
 from pydantic import BaseModel, Field, constr
 from typing import List
 
 NonEmptyStr = constr(strip_whitespace=True, min_length=1)
+
 
 class FeedbackSection(BaseModel):
     score: NonEmptyStr
@@ -22,4 +24,6 @@ class FeedbackEnvelope(BaseModel):
     feedback: List[ProblemFeedback]
     # When error == True, 'feedback' may be empty and 'errors' should explain why.
     error: bool = False
-    errors: List[str] = Field(default_factory=list, description="Human-readable reasons")
+    errors: List[str] = Field(
+        default_factory=list, description="Human-readable reasons"
+    )

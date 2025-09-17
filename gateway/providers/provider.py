@@ -57,7 +57,9 @@ class Provider:
             raise e
 
         if envelope.error:
-            reason = "; ".join(envelope.errors) if envelope.errors else "unspecified error"
+            reason = (
+                "; ".join(envelope.errors) if envelope.errors else "unspecified error"
+            )
             raise ValueError(f"llm_error: {reason}")
 
         feedback_models = envelope.feedback
