@@ -56,6 +56,10 @@ class Provider:
             # Let the service classify this as network_error
             raise e
 
+        if envelope.error:
+            reason = "; ".join(envelope.errors) if envelope.errors else "unspecified error"
+            raise ValueError(f"llm_error: {reason}")
+
         feedback_models = envelope.feedback
 
         # Cardinality check vs input payload
@@ -63,11 +67,15 @@ class Provider:
             raise ValueError(
                 f"schema_mismatch: expected {len(payload)} feedback, got {len(feedback_models)}"
             )
+
         for feedback_model in feedback_models:
             print(feedback_model.model_dump())
+
         return feedback_models
 
-    async def _get_response(self, model_name: str, system_prompt: str, prompt: str) -> FeedbackEnvelope:
+    async def _get_response(
+        self, model_name: str, system_prompt: str, prompt: str
+    ) -> FeedbackEnvelope:
         print(system_prompt, prompt)
         kwargs = dict(
             response_model=FeedbackEnvelope,
