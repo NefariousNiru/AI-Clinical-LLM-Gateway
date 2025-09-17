@@ -8,7 +8,9 @@ from gateway.providers.provider import Provider, get_provider
 from google.protobuf import struct_pb2
 from gateway.providers.dummy_provider import DummyProvider
 from gateway.util.errors import TerminalError, TransientError
+import logging
 
+logger = logging.getLogger(__name__)
 ERROR_METADATA_KEY = "x-error-code"
 
 
@@ -18,15 +20,17 @@ async def abort_with_error(
     code: str,
     details: str,
 ) -> None:
-    """
-    Abort the RPC and attach a machine-readable error code for downstream
-    classification (transient vs terminal).
+    """Abort the RPC with a status and attach a machine-readable error code.
+
+    The `x-error-code` trailer enables downstream components to classify errors
+    without string-parsing the gRPC details.
     """
     context.set_trailing_metadata(((ERROR_METADATA_KEY, code),))
     await context.abort(status, details)
 
 
 def _json_value_to_py(v: struct_pb2.Value):
+    """Convert a google.protobuf.Value into the corresponding Python object."""
     kind = v.WhichOneof("kind")
     if kind == "null_value":
         return None
@@ -44,17 +48,26 @@ def _json_value_to_py(v: struct_pb2.Value):
 
 
 def _struct_to_dict(s: struct_pb2.Struct) -> dict:
+    """Convert a google.protobuf.Struct to a python dict
+    :rtype: dict
+    :param: grpc struct
+    """
     return {k: _json_value_to_py(v) for k, v in s.fields.items()}
 
 
 class GraderService(grader_pb2_grpc.GraderServicer):
+    """gRPC service that validates input, delegates to a model provider, and maps results."""
+
     async def Grade(
         self,
         request: grader_pb2.GradeRequest,
         context: grpc.aio.ServicerContext,
     ) -> grader_pb2.GradeResponse:
-        """
-        Validate request, delegate to provider, and return feedback.
+        """Validate request, call provider, and return structured feedback.
+
+        Error semantics:
+          - gRPC status code communicates class (INVALID_ARGUMENT, UNAVAILABLE, etc.).
+          - Trailer metadata x-error-code is one of TransientError.* or TerminalError.*.
         """
         if len(request.rubrics) == 0:
             await abort_with_error(
@@ -74,15 +87,35 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         rubrics = [_struct_to_dict(s) for s in request.rubrics]
         payload = [_struct_to_dict(s) for s in request.payload]
 
-        # Resolve provider (throws if unsupported)
-        print("Model Requested: ", request.model_provider.upper(), request.model_name)
-        raw_client: AsyncOpenAI | DummyProvider = get_provider(request.model_provider)
-        if isinstance(raw_client, AsyncOpenAI):
-            provider = Provider(raw_client=raw_client)
-        else:
-            provider = raw_client
+        logger.info(
+            "Grade request: provider=%s model=%s items=%d trace_id=%s job_id=%s",
+            request.model_provider,
+            request.model_name,
+            len(payload),
+            request.trace_id,
+            request.job_id,
+        )
 
-        # Delegate grading (provider returns list of ProblemFeedback-like dicts)
+        try:
+            raw_client: AsyncOpenAI | DummyProvider = get_provider(
+                request.model_provider
+            )
+        except ValueError as e:
+            await abort_with_error(
+                context,
+                grpc.StatusCode.INVALID_ARGUMENT,
+                TerminalError.UNSUPPORTED_MODEL,
+                str(e),
+            )
+            raise
+
+        provider = (
+            Provider(raw_client=raw_client)
+            if isinstance(raw_client, AsyncOpenAI)
+            else raw_client
+        )
+
+        # Delegate grading
         feedback_models: List[ProblemFeedback] = []
         try:
             feedback_models = await provider.grade(
@@ -109,7 +142,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 "Auth failed",
             )
         except ValueError as e:
-            # Let providers raise ValueError("invalid_payload: ...") or ("invalid_rubric: ...")
+            # Provider may raise ValueError prefixed with known codes.
             msg = str(e)
             if msg.startswith(TerminalError.INVALID_PAYLOAD):
                 code = TerminalError.INVALID_PAYLOAD
@@ -117,8 +150,10 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 code = TerminalError.INVALID_RUBRIC
             else:
                 code = TransientError.SCHEMA_MISMATCH
+            logger.warning("Client error: %s (%s)", msg, code)
             await abort_with_error(context, grpc.StatusCode.INVALID_ARGUMENT, code, msg)
         except Exception as e:
+            logger.exception("Unexpected provider failure")
             await abort_with_error(
                 context,
                 grpc.StatusCode.UNAVAILABLE,
@@ -134,6 +169,13 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 f"expected {len(payload)} feedback items, got {len(feedback_models)}",
             )
 
+        logger.info(
+            "Grade success: provider=%s model=%s items=%d",
+            request.model_provider,
+            request.model_name,
+            len(feedback_models),
+        )
+
         return grader_pb2.GradeResponse(
             feedback=self._parse_problem_feedback_to_stub(feedback_models),
             model_provider=request.model_provider,
@@ -144,6 +186,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
     def _parse_problem_feedback_to_stub(
         feedback_models: List[ProblemFeedback],
     ) -> List[grader_pb2.ProblemFeedback]:
+        """Convert pydantic ProblemFeedback models into protobuf DTOs."""
         feedback_items: List[grader_pb2.ProblemFeedback] = []
         for fb in feedback_models:
             feedback_items.append(

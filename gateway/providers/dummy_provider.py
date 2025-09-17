@@ -1,6 +1,9 @@
 # gateway/providers/dummy_provider.py
 from typing import List, Any, Dict
 from gateway.config.pydantic_models import ProblemFeedback, FeedbackSection
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DummyProvider:
@@ -42,6 +45,11 @@ class DummyProvider:
 
         # Cardinality guard for safety (parity with other providers)
         if len(out) != len(payload):
+            logger.error(
+                "DummyProvider cardinality mismatch: expected=%d got=%d",
+                len(payload),
+                len(out),
+            )
             raise ValueError(
                 f"schema_mismatch: expected {len(payload)} feedback, got {len(out)}"
             )

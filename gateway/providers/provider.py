@@ -1,5 +1,12 @@
 # gateway/interface/provider.py
-from typing import List, Any, Dict
+"""Concrete OpenAI/Ollama provider using Instructor for strict schema parsing.
+
+Responsibilities:
+- Build the prompt from rubrics + payload via the user template.
+- Call the model through Instructor with JSON→Pydantic enforcement.
+- Surface validation failures as ValueError('schema_mismatch: ...').
+- Avoid logging sensitive prompt/response contents at INFO level.
+"""
 import instructor
 from openai import AsyncOpenAI
 from openai.types.chat import (
@@ -11,9 +18,18 @@ from gateway.config.pydantic_models import ProblemFeedback, FeedbackEnvelope
 from gateway.config.settings import settings
 from gateway.providers.dummy_provider import DummyProvider
 from gateway.util import functions
+from typing import List, Any, Dict
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_provider(provider: str) -> AsyncOpenAI | DummyProvider:
+    """Returns a Provider instance which can be used to call models.
+    :rtype: AsyncOpenAI or DummyProvider
+    :param provider: Provider name from ['openai', 'ollama', 'dummy']
+    :raises ValueError: If provider name is invalid
+    """
     provider_name = provider.lower()
     if provider_name == "dummy":
         return DummyProvider()
@@ -26,6 +42,7 @@ def get_provider(provider: str) -> AsyncOpenAI | DummyProvider:
 
 
 class Provider:
+    """Schema-enforcing provider with transparent retries and analytics tracing."""
     def __init__(self, raw_client: AsyncOpenAI):
         self.client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
 
@@ -40,6 +57,19 @@ class Provider:
         trace_id: str,
         job_id: str,
     ) -> List[ProblemFeedback]:
+        """
+        Return rubric-aligned feedback for each input problem.
+        :param rubrics: List of rubric JSON dicts payload: List of problem JSON dicts.
+        :param payload: the student answer payload
+        :param system_prompt: System message instructing model behavior.
+        :param user_prompt_template: Format string used to render rubrics/payload.
+        :param model_name: Provider-specific model identifier.
+        :param trace_id: Correlation id for observability.
+        :param job_id: Backend job identifier for traceability.
+
+        :raises ValueError('schema_mismatch: ...') on validation errors.
+        :raises ValueError('llm_error: ...') if the envelope reports error=True.
+        """
 
         # Build prompt from flexible JSON inputs
         prompt = functions.create_prompt(user_prompt_template, rubrics, payload)
@@ -50,10 +80,12 @@ class Provider:
                 model_name, system_prompt, prompt
             )
         except ValidationError as ve:
+            logger.warning("Validation error from provider: %s", ve)
             raise ValueError(f"schema_mismatch: {ve}")  # handled upstream
         except Exception as e:
             # Network or other transient issue at the provider level
             # Let the service classify this as network_error
+            logger.error("Provider request failed: %s", e)
             raise e
 
         if envelope.error:
@@ -70,15 +102,23 @@ class Provider:
                 f"schema_mismatch: expected {len(payload)} feedback, got {len(feedback_models)}"
             )
 
-        for feedback_model in feedback_models:
-            print(feedback_model.model_dump())
+        logger.debug(
+            "Received %d feedback items: %s",
+            len(feedback_models),
+            [fm.name for fm in feedback_models],
+        )
 
         return feedback_models
 
     async def _get_response(
         self, model_name: str, system_prompt: str, prompt: str
     ) -> FeedbackEnvelope:
-        print(system_prompt, prompt)
+        """Call the chat model with Instructor enforcing FeedbackEnvelope.
+        Notes:
+            - We pass through INSTRUCTOR_MAX_RETRY for Instructor's internal retry.
+            - Temperature is omitted for GPT-5* models (as requested).
+        """
+        logger.debug("Dispatching chat completion to model=%s", model_name)
         kwargs = dict(
             response_model=FeedbackEnvelope,
             model=model_name,

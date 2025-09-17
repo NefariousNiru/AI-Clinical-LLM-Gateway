@@ -1,4 +1,5 @@
 # gateway/util/errors.py
+"""String constants for mapping gateway errors into machine-readable codes."""
 
 
 class TransientError:
