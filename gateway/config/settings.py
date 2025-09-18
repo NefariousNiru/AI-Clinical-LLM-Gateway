@@ -9,8 +9,8 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # Host and Port Details
-    host: str = Field("0.0.0.0", env="GATEWAY_HOST")
-    port: int = Field(50051, env="GATEWAY_PORT")
+    host: str = Field("0.0.0.0", env="HOST")
+    port: int = Field(50051, env="PORT")
     ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
 
     # API Keys
@@ -24,11 +24,10 @@ class Settings(BaseSettings):
     log_level: str = Field("INFO", env="LOG_LEVEL")
 
     # TLS fields
-    tls_enabled: bool = Field(False, env="GATEWAY_TLS")
-    # tls_cert_path: str | None = Field(None, env="GATEWAY_TLS_CERT_PATH")
-    # tls_key_path: str | None = Field(None, env="GATEWAY_TLS_KEY_PATH")
-    # tls_ca_path: str | None = Field(None, env="GATEWAY_TLS_CA_PATH")
-    # shared_token: str | None = Field(None, env="GATEWAY_SHARED_TOKEN")  # optional defense-in-depth
+    shared_token: str | None = Field(None, env="SHARED_TOKEN")
+    tls_enabled: bool = Field(False, env="TLS_ENABLED")
+    tls_cert_path: str | None = Field(None, env="TLS_CERT_PATH")
+    tls_key_path: str | None = Field(None, env="TLS_KEY_PATH")
 
 
 try:

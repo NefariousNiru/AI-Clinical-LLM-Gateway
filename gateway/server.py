@@ -4,6 +4,8 @@ import logging
 from logging import Logger
 from logging.handlers import RotatingFileHandler
 import grpc
+from grpc import Server
+from gateway.auth_token_interceptor import AuthTokenInterceptor
 from gateway.config.settings import settings
 from gateway.grader.v1 import grader_pb2_grpc
 from gateway.service import grader_service
@@ -32,21 +34,54 @@ def init_logger() -> Logger:
     return logger
 
 
+def bind_port(server: Server, logger: Logger):
+    bind_addr = f"{settings.host}:{settings.port}"
+    if settings.tls_enabled:
+        if not settings.tls_cert_path or not settings.tls_key_path:
+            logger.error(
+                "TLS enabled but GATEWAY_TLS_CERT_PATH or GATEWAY_TLS_KEY_PATH missing"
+            )
+            raise SystemExit(1)
+        try:
+            with open(settings.tls_key_path, "rb") as f:
+                private_key = f.read()
+            with open(settings.tls_cert_path, "rb") as f:
+                cert_chain = f.read()
+        except Exception as e:
+            logger.exception("Failed to read TLS cert/key: %s", e)
+            raise SystemExit(1)
+
+        server_creds = grpc.ssl_server_credentials(((private_key, cert_chain),))
+        server.add_secure_port(bind_addr, server_creds)
+        logger.info("[LLM Gateway] listening on %s (TLS enabled)", bind_addr)
+
+        # Enforce shared token in TLS mode
+        if not settings.shared_token:
+            logger.error("GATEWAY_SHARED_TOKEN is required when TLS is enabled")
+            raise SystemExit(1)
+    else:
+        server.add_insecure_port(bind_addr)
+        logger.info("[LLM Gateway] listening on %s (TLS disabled)", bind_addr)
+
+
 async def serve() -> None:
     """Start the async gRPC server and block until termination."""
     logger = init_logger()
 
-    server = grpc.aio.server()  # cross-platform grpc aio server
-    grader_pb2_grpc.add_GraderServicer_to_server(
-        grader_service.GraderService(), server
-    )  # add the grading service method to grpc
+    # Init Auth + Cross-Platform aio Server
+    interceptors = [AuthTokenInterceptor(settings.shared_token)]
+    server = grpc.aio.server(interceptors=interceptors)
 
-    bind_addr = f"{settings.host}:{settings.port}"  # Bind ports
-    server.add_insecure_port(bind_addr)
+    # Add the grading service method to grpc
+    grader_pb2_grpc.add_GraderServicer_to_server(grader_service.GraderService(), server)
 
-    logger.info("[LLM Gateway] listening on %s (TLS disabled)", bind_addr)
+    # Bind ports
+    bind_port(server=server, logger=logger)
+
+    # Start server
     await server.start()
 
+    # Graceful Shutdown
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
