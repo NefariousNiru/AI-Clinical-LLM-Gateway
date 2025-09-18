@@ -1,6 +1,8 @@
 # gateway/service/grader_service.py
+import time
 from typing import List
 import grpc
+from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 from gateway.config.pydantic_models import ProblemFeedback
 from gateway.grader.v1 import grader_pb2_grpc, grader_pb2
@@ -69,6 +71,8 @@ class GraderService(grader_pb2_grpc.GraderServicer):
           - gRPC status code communicates class (INVALID_ARGUMENT, UNAVAILABLE, etc.).
           - Trailer metadata x-error-code is one of TransientError.* or TerminalError.*.
         """
+        e2e_start = time.perf_counter()  # Start end-2-end timer
+
         if len(request.rubrics) == 0:
             await abort_with_error(
                 context,
@@ -88,7 +92,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         payload = [_struct_to_dict(s) for s in request.payload]
 
         logger.info(
-            "Grade request: provider=%s model=%s items=%d trace_id=%s job_id=%s",
+            "Grade request: provider=%s model=%s items(DRPs)=%d trace_id=%s job_id=%s",
             request.model_provider,
             request.model_name,
             len(payload),
@@ -97,7 +101,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         )
 
         try:
-            raw_client: AsyncOpenAI | DummyProvider = get_provider(
+            raw_client: AsyncOpenAI | DummyProvider | AsyncAnthropic = get_provider(
                 request.model_provider
             )
         except ValueError as e:
@@ -111,13 +115,14 @@ class GraderService(grader_pb2_grpc.GraderServicer):
 
         provider = (
             Provider(raw_client=raw_client)
-            if isinstance(raw_client, AsyncOpenAI)
+            if isinstance(raw_client, (AsyncOpenAI, AsyncAnthropic))
             else raw_client
         )
 
         # Delegate grading
         feedback_models: List[ProblemFeedback] = []
         try:
+            model_start = time.perf_counter()  # start inference specific timer
             feedback_models = await provider.grade(
                 rubrics=rubrics,
                 payload=payload,
@@ -127,6 +132,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 trace_id=request.trace_id,
                 job_id=request.job_id,
             )
+            model_end = time.perf_counter()  # end inference specific timer
         except TimeoutError:
             await abort_with_error(
                 context,
@@ -170,14 +176,23 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             )
 
         logger.info(
-            "Grade success: provider=%s model=%s items=%d",
+            "Grade success: provider=%s model=%s items(DRPs)=%d trace_id=%s job_id=%s",
             request.model_provider,
             request.model_name,
             len(feedback_models),
+            request.trace_id,
+            request.job_id,
         )
 
+        # Parse to stub
+        feedback = self._parse_problem_feedback_to_stub(feedback_models)
+
+        e2e_end = time.perf_counter()  # End e2e timer
+        logger.info("Model took %f seconds", model_end - model_start)
+        logger.info("Total grading request took %f seconds \n", e2e_end - e2e_start)
+
         return grader_pb2.GradeResponse(
-            feedback=self._parse_problem_feedback_to_stub(feedback_models),
+            feedback=feedback,
             model_provider=request.model_provider,
             model_name=request.model_name or "dummy-model",
         )

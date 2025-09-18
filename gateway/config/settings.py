@@ -15,10 +15,12 @@ class Settings(BaseSettings):
 
     # API Keys
     openai_api_key: str | None = Field(None, env="OPENAI_API_KEY")
+    anthropic_api_key: str | None = Field(None, env="ANTHROPIC_API_KEY")
 
     # Model Behaviour
     model_temperature: float = Field(0, env="MODEL_TEMPERATURE")
     instructor_max_retry: int = Field(3, env="INSTRUCTOR_MAX_RETRY")
+    anthropic_max_tokens: int = Field(5000, env="ANTHROPIC_MAX_TOKENS")
 
     # Logging
     log_level: str = Field("INFO", env="LOG_LEVEL")

@@ -13,6 +13,7 @@ from openai.types.chat import (
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
+from anthropic import AsyncAnthropic
 from pydantic import ValidationError
 from gateway.config.pydantic_models import ProblemFeedback, FeedbackEnvelope
 from gateway.config.settings import settings
@@ -24,7 +25,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_provider(provider: str) -> AsyncOpenAI | DummyProvider:
+def get_provider(provider: str) -> AsyncOpenAI | DummyProvider | AsyncAnthropic:
     """Returns a Provider instance which can be used to call models.
     :rtype: AsyncOpenAI or DummyProvider
     :param provider: Provider name from ['openai', 'ollama', 'dummy']
@@ -37,6 +38,8 @@ def get_provider(provider: str) -> AsyncOpenAI | DummyProvider:
         return AsyncOpenAI(api_key=settings.openai_api_key)
     elif provider_name == "ollama":
         return AsyncOpenAI(base_url=settings.ollama_host, api_key="ollama")
+    elif provider_name == "anthropic":
+        return AsyncAnthropic(api_key=settings.anthropic_api_key)
     else:
         raise ValueError(f"Unsupported provider: {provider_name}")
 
@@ -44,8 +47,16 @@ def get_provider(provider: str) -> AsyncOpenAI | DummyProvider:
 class Provider:
     """Schema-enforcing provider with transparent retries and analytics tracing."""
 
-    def __init__(self, raw_client: AsyncOpenAI):
-        self.client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
+    def __init__(self, raw_client: AsyncOpenAI | AsyncAnthropic):
+        self.raw_client = raw_client
+        if isinstance(raw_client, AsyncOpenAI):
+            self.client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
+        elif isinstance(raw_client, AsyncAnthropic):
+            self.client = instructor.from_anthropic(
+                raw_client, mode=instructor.Mode.ANTHROPIC_JSON
+            )
+        else:
+            raise ValueError(f"Unsupported client: {type(raw_client)}")
 
     async def grade(
         self,
@@ -131,8 +142,11 @@ class Provider:
             strict=True,
         )
 
-        # Only add temperature if model supports it
+        # GPT-5 Models do not support temperature
         if "gpt-5" not in model_name.lower():
             kwargs["temperature"] = settings.model_temperature
+
+        if isinstance(self.raw_client, AsyncAnthropic):
+            kwargs["max_tokens"] = settings.anthropic_max_tokens
 
         return await self.client.chat.completions.create(**kwargs)

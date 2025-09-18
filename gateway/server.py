@@ -1,8 +1,6 @@
 # gateway/server.py
 import asyncio
-import logging
 from logging import Logger
-from logging.handlers import RotatingFileHandler
 import grpc
 from grpc import Server
 from gateway.auth_token_interceptor import AuthTokenInterceptor
@@ -10,28 +8,7 @@ from gateway.config.settings import settings
 from gateway.grader.v1 import grader_pb2_grpc
 from gateway.service import grader_service
 import signal
-import os
-
-
-def init_logger() -> Logger:
-    os.makedirs("logs", exist_ok=True)
-    log_level = getattr(logging, (settings.log_level or "INFO").upper(), logging.INFO)
-    log_formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(name)s - %(message)s"
-    )
-    file_handler = RotatingFileHandler(
-        "logs/app.log", maxBytes=50 * 1024 * 1024, backupCount=5, encoding="utf-8"
-    )
-    file_handler.setFormatter(log_formatter)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter)
-    root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
-    root_logger.handlers.clear()
-    root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
-    logger = logging.getLogger("grader.service")
-    return logger
+import util.logger as lg
 
 
 def bind_port(server: Server, logger: Logger):
@@ -66,7 +43,7 @@ def bind_port(server: Server, logger: Logger):
 
 async def serve() -> None:
     """Start the async gRPC server and block until termination."""
-    logger = init_logger()
+    logger = lg.init_logger()
 
     # Init Auth + Cross-Platform aio Server
     interceptors = [AuthTokenInterceptor(settings.shared_token)]
