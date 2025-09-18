@@ -30,7 +30,9 @@ class DummyProvider:
         job_id: str,
     ) -> List[ProblemFeedback]:
         out: list[ProblemFeedback] = []
-
+        logger.info(
+            f"Dummy Provider call: system prompt: {system_prompt}, user_prompt_template: {user_prompt_template}, job_id: {job_id}, trace_id: {trace_id}, model_name: {model_name}, rubrics: {rubrics}"
+        )
         for p in payload:
             out.append(
                 ProblemFeedback(
