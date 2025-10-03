@@ -4,12 +4,13 @@ from logging.handlers import RotatingFileHandler
 import os
 from gateway.config.settings import settings
 
+
 class ColoredFormatter(logging.Formatter):
     COLORS = {
-        "DEBUG": "\033[37m",     # White
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[37m",  # White
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[41m",  # Red background
     }
     RESET = "\033[0m"
@@ -18,6 +19,7 @@ class ColoredFormatter(logging.Formatter):
         color = self.COLORS.get(record.levelname, self.RESET)
         record.levelname = f"{color}{record.levelname}{self.RESET}"
         return super().format(record)
+
 
 def init_logger() -> Logger:
     os.makedirs("logs", exist_ok=True)
@@ -30,7 +32,9 @@ def init_logger() -> Logger:
     )
     file_handler.setFormatter(log_formatter)
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(ColoredFormatter("%(asctime)s %(levelname)s %(name)s - %(message)s"))
+    console_handler.setFormatter(
+        ColoredFormatter("%(asctime)s %(levelname)s %(name)s - %(message)s")
+    )
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
     root_logger.handlers.clear()
@@ -38,4 +42,3 @@ def init_logger() -> Logger:
     root_logger.addHandler(console_handler)
     logger = logging.getLogger("grader.service")
     return logger
-
