@@ -5,7 +5,7 @@ from pydantic.v1 import BaseSettings, Field
 import logging
 import os
 
-if os.getenv("APP_ENV") == "dev":
+if os.getenv("APP_ENV", "dev") == "dev":
     load_dotenv()
 
 

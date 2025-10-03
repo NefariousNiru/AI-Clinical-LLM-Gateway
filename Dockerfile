@@ -23,7 +23,5 @@ COPY README.md LICENSE.md ./
 # gRPC port
 EXPOSE 50051
 
-# If your server reads HOST/PORT from env, this is fine.
-# Using -m avoids path issues with packages.
-ENV PYTHONPATH=/srv/gateway
-CMD ["python", "gateway/server.py"]
+# server.py now lives at repo root
+CMD ["python", "server.py"]

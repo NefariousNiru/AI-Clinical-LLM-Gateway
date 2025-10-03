@@ -8,7 +8,7 @@ from gateway.config.settings import settings
 from gateway.grader.v1 import grader_pb2_grpc
 from gateway.service import grader_service
 import signal
-import util.logger as lg
+import gateway.util.logger as lg
 
 
 def bind_port(server: Server, logger: Logger):
