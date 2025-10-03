@@ -1,0 +1,79 @@
+# OS/Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.python-version
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.pyre/
+ruff_cache/
+.cache/
+
+# Conda / Poetry / uv
+conda-meta/
+.envrc
+poetry.lock
+# If you use Poetry, keep the lock; otherwise ignore it. Uncomment if not using:
+# poetry.lock
+uv.lock
+
+# FastAPI/Flask runtime
+*.log
+logs/
+instance/
+# Your current raw logs and LLM artifacts - do NOT commit PHI
+/logs/
+/test/
+
+# Config & secrets
+.env
+.env.*
+!*.example
+
+# Frontend (if any)
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+coverage/
+
+# Data / cache
+data/
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Systemd/docker (if you add later)
+docker-data/
+
+.git
+*.pyc
+*.sqlite
+*.pem
+*.key
+.build/
+
