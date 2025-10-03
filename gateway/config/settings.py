@@ -3,15 +3,18 @@ import sys
 from dotenv import load_dotenv
 from pydantic.v1 import BaseSettings, Field
 import logging
+import os
 
-load_dotenv()
+if os.getenv("APP_ENV") == "dev":
+    load_dotenv()
 
 
 class Settings(BaseSettings):
-    # Host and Port Details
+    # App
     host: str = Field("0.0.0.0", env="HOST")
     port: int = Field(50051, env="PORT")
     ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
+    shared_token: str | None = Field(None, env="SHARED_TOKEN")
 
     # API Keys
     openai_api_key: str | None = Field(None, env="OPENAI_API_KEY")
@@ -25,11 +28,8 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = Field("INFO", env="LOG_LEVEL")
 
-    # TLS fields
-    shared_token: str | None = Field(None, env="SHARED_TOKEN")
+    # TLS
     tls_enabled: bool = Field(False, env="TLS_ENABLED")
-    tls_cert_path: str | None = Field(None, env="TLS_CERT_PATH")
-    tls_key_path: str | None = Field(None, env="TLS_KEY_PATH")
 
 
 try:
