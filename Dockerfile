@@ -11,17 +11,14 @@ WORKDIR /srv
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install deps
 COPY --from=build /srv/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only what we need (don’t ship logs/__pycache__)
+# copy code
 COPY gateway ./gateway
 COPY proto ./proto
+COPY server.py ./
 COPY README.md LICENSE.md ./
 
-# gRPC port
 EXPOSE 50051
-
-# server.py now lives at repo root
 CMD ["python", "server.py"]
