@@ -11,17 +11,18 @@ WORKDIR /srv
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Install deps
 COPY --from=build /srv/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# App source
-COPY . .
+# Copy only what we need (don’t ship logs/__pycache__)
+COPY gateway ./gateway
+COPY proto ./proto
+COPY README.md LICENSE.md ./
 
-# gRPC default port for your gateway
+# gRPC port
 EXPOSE 50051
 
-# If your server reads HOST/PORT from env internally, this is fine:
-CMD ["python", "server.py"]
-
-# If your server expects CLI flags instead, use:
-# CMD ["sh", "-c", "python server.py --host ${HOST:-0.0.0.0} --port ${PORT:-50051} --tls ${TLS_ENABLED:-false} --log-level ${LOG_LEVEL:-INFO}"]
+# If your server reads HOST/PORT from env, this is fine.
+# Using -m avoids path issues with packages.
+CMD ["python", "-m", "gateway.server"]
