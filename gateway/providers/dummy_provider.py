@@ -1,59 +1,41 @@
 # gateway/providers/dummy_provider.py
-from typing import List, Any, Dict
-from gateway.config.pydantic_models import ProblemFeedback, FeedbackSection
-import logging
-
-logger = logging.getLogger(__name__)
+from gateway.config.pydantic_models import (
+    ProblemFeedback,
+    FeedbackSection,
+    FeedbackEnvelope,
+    ChatServiceResponse,
+)
 
 
 class DummyProvider:
-    """No-LLM provider that echoes basic structure back as ProblemFeedback."""
+    """No-LLM provider: Dummy to test"""
 
     @staticmethod
-    def _mk_section(head: str | None) -> FeedbackSection:
-        text = head or ""
-        return FeedbackSection(
-            score="0",
-            evaluation=f"auto-eval: {text[:32]}",
-            feedback=f"auto-feedback: {text[:64]}",
+    def get_dummy_response():
+        """Return a mock ChatServiceResponse for testing ChatService without a real provider."""
+        dummy_section = FeedbackSection(
+            score="1",
+            evaluation="Clear explanation of pathophysiology and risk factors.",
+            feedback="Continue using structured reasoning and evidence-backed arguments.",
         )
 
-    async def grade(
-        self,
-        *,
-        rubrics: List[Dict[str, Any]],
-        payload: List[Dict[str, Any]],
-        system_prompt: str,
-        user_prompt_template: str,
-        model_name: str,
-        trace_id: str,
-        job_id: str,
-    ) -> List[ProblemFeedback]:
-        out: list[ProblemFeedback] = []
-        logger.info(
-            f"Dummy Provider call: system prompt: {system_prompt}, user_prompt_template: {user_prompt_template}, job_id: {job_id}, trace_id: {trace_id}, model_name: {model_name}, rubrics: {rubrics}"
+        dummy_feedback = ProblemFeedback(
+            name="Hypertension Management",
+            is_priority=True,
+            identification=dummy_section,
+            explanation=dummy_section,
+            plan_recommendation=dummy_section,
+            monitoring=dummy_section,
         )
-        for p in payload:
-            out.append(
-                ProblemFeedback(
-                    name=str(p.get("name", "unknown_problem")),
-                    is_priority=bool(p.get("is_priority", False)),
-                    identification=self._mk_section(p.get("identification")),
-                    explanation=self._mk_section(p.get("explanation")),
-                    plan_recommendation=self._mk_section(p.get("plan_recommendation")),
-                    monitoring=self._mk_section(p.get("monitoring")),
-                )
-            )
 
-        # Cardinality guard for safety (parity with other providers)
-        if len(out) != len(payload):
-            logger.error(
-                "DummyProvider cardinality mismatch: expected=%d got=%d",
-                len(payload),
-                len(out),
-            )
-            raise ValueError(
-                f"schema_mismatch: expected {len(payload)} feedback, got {len(out)}"
-            )
+        dummy_envelope = FeedbackEnvelope(
+            feedback=dummy_feedback,
+            error=False,
+            errors=[],
+        )
 
-        return out
+        return ChatServiceResponse(
+            envelope=dummy_envelope,
+            input_tokens=1050,
+            output_tokens=320,
+        )

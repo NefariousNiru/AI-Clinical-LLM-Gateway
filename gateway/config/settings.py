@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     host: str = Field("0.0.0.0", env="HOST")
     port: int = Field(50051, env="PORT")
     ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
+    shared_token_key: str = "x-gateway-token"
     shared_token: str | None = Field(None, env="SHARED_TOKEN")
 
     # API Keys

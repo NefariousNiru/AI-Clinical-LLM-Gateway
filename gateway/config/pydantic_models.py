@@ -26,11 +26,22 @@ class ProblemFeedback(BaseModel):
 
 
 class FeedbackEnvelope(BaseModel):
-    """Top-level wrapper produced by the LLM provider (or dummy)."""
+    """Wrapper produced by Instructor when Chatting with LLM"""
 
-    feedback: List[ProblemFeedback]
+    feedback: ProblemFeedback
     # When error == True, 'feedback' may be empty and 'errors' should explain why.
-    error: bool = False
-    errors: List[str] = Field(
-        default_factory=list, description="Human-readable reasons"
+    error: bool = Field(
+        default=False,
+        description="Flag to set true if any problem is encountered.",
     )
+    errors: List[str] = Field(
+        default_factory=list, description="Human-readable reasons for error"
+    )
+
+
+class ChatServiceResponse(BaseModel):
+    """Top Level Chat Service response"""
+
+    envelope: FeedbackEnvelope
+    input_tokens: int
+    output_tokens: int

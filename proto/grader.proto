@@ -1,6 +1,5 @@
 syntax = "proto3";
 package grader.v1;
-import "google/protobuf/struct.proto";
 option csharp_namespace = "Grader.V1";
 
 // ---------- Feedback (response) ----------
@@ -23,23 +22,18 @@ message ProblemFeedback {
 // ---------- RPC messages ----------
 
 message GradeRequest {
-  repeated google.protobuf.Struct rubrics = 1;   // open JSON
-  repeated google.protobuf.Struct payload = 2;   // open JSON
-
-  string system_prompt = 3;
-  string user_prompt_template = 4;
-  string model_provider = 5;
-  string model_name = 6;
+  string system_prompt = 1;
+  string user_prompt = 2;
+  string model_provider = 3;
+  string model_name = 4;
 
   // passthroughs
-  string trace_id = 7;
-  string job_id = 8;
+  string trace_id = 5;
+  string job_id = 6;
 }
 
 message GradeResponse {
-  repeated ProblemFeedback feedback = 1;  // same length/order as request.problems
-  string model_provider = 2;              // model provider used
-  string model_name = 3;                  // actual model used
+  ProblemFeedback feedback = 1;
 }
 
 // Errors travel via gRPC status, with gateway placing a string code in metadata:

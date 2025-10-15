@@ -14,3 +14,8 @@ class TerminalError:
     UNSUPPORTED_MODEL = "unsupported_model"
     AUTH_FAILED = "auth_failed"
     INVALID_PAYLOAD = "invalid_payload"
+
+
+class ErrorMessages:
+    SET_SHARED_TOKEN = "Expected token is empty; See Shared Token in settings.py"
+    AUTHENTICATION_FAILED = "Authentication failed"

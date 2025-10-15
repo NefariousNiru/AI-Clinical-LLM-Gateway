@@ -1,8 +1,6 @@
-from google.protobuf import struct_pb2 as _struct_pb2
-from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from collections.abc import Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
@@ -55,37 +53,29 @@ class ProblemFeedback(_message.Message):
 
 class GradeRequest(_message.Message):
     __slots__ = (
-        "rubrics",
-        "payload",
         "system_prompt",
-        "user_prompt_template",
+        "user_prompt",
         "model_provider",
         "model_name",
         "trace_id",
         "job_id",
     )
-    RUBRICS_FIELD_NUMBER: _ClassVar[int]
-    PAYLOAD_FIELD_NUMBER: _ClassVar[int]
     SYSTEM_PROMPT_FIELD_NUMBER: _ClassVar[int]
-    USER_PROMPT_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
+    USER_PROMPT_FIELD_NUMBER: _ClassVar[int]
     MODEL_PROVIDER_FIELD_NUMBER: _ClassVar[int]
     MODEL_NAME_FIELD_NUMBER: _ClassVar[int]
     TRACE_ID_FIELD_NUMBER: _ClassVar[int]
     JOB_ID_FIELD_NUMBER: _ClassVar[int]
-    rubrics: _containers.RepeatedCompositeFieldContainer[_struct_pb2.Struct]
-    payload: _containers.RepeatedCompositeFieldContainer[_struct_pb2.Struct]
     system_prompt: str
-    user_prompt_template: str
+    user_prompt: str
     model_provider: str
     model_name: str
     trace_id: str
     job_id: str
     def __init__(
         self,
-        rubrics: _Optional[_Iterable[_Union[_struct_pb2.Struct, _Mapping]]] = ...,
-        payload: _Optional[_Iterable[_Union[_struct_pb2.Struct, _Mapping]]] = ...,
         system_prompt: _Optional[str] = ...,
-        user_prompt_template: _Optional[str] = ...,
+        user_prompt: _Optional[str] = ...,
         model_provider: _Optional[str] = ...,
         model_name: _Optional[str] = ...,
         trace_id: _Optional[str] = ...,
@@ -93,16 +83,9 @@ class GradeRequest(_message.Message):
     ) -> None: ...
 
 class GradeResponse(_message.Message):
-    __slots__ = ("feedback", "model_provider", "model_name")
+    __slots__ = ("feedback",)
     FEEDBACK_FIELD_NUMBER: _ClassVar[int]
-    MODEL_PROVIDER_FIELD_NUMBER: _ClassVar[int]
-    MODEL_NAME_FIELD_NUMBER: _ClassVar[int]
-    feedback: _containers.RepeatedCompositeFieldContainer[ProblemFeedback]
-    model_provider: str
-    model_name: str
+    feedback: ProblemFeedback
     def __init__(
-        self,
-        feedback: _Optional[_Iterable[_Union[ProblemFeedback, _Mapping]]] = ...,
-        model_provider: _Optional[str] = ...,
-        model_name: _Optional[str] = ...,
+        self, feedback: _Optional[_Union[ProblemFeedback, _Mapping]] = ...
     ) -> None: ...

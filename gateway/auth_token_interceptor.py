@@ -1,10 +1,14 @@
 # gateway/auth_token_interceptor.py
 import grpc
 from typing import Optional
+from gateway.config.settings import settings
+from gateway.util.errors import ErrorMessages
 
 
 class AuthTokenInterceptor(grpc.aio.ServerInterceptor):
     def __init__(self, expected_token: Optional[str]):
+        if not expected_token.strip():
+            raise ValueError(ErrorMessages.SET_SHARED_TOKEN)
         self.expected_token = expected_token
 
     async def intercept_service(self, continuation, handler_call_details):
@@ -15,8 +19,8 @@ class AuthTokenInterceptor(grpc.aio.ServerInterceptor):
         async def check_token(context):
             if not self.expected_token:
                 return
-            md = {k: v for k, v in context.invocation_metadata()}
-            token = md.get("x-gateway-token")
+            md = {k.lower(): v for k, v in context.invocation_metadata()}
+            token = md.get(settings.shared_token_key)
             if token != self.expected_token:
                 await context.abort(grpc.StatusCode.UNAUTHENTICATED, "auth_failed")
 
