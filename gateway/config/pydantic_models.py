@@ -1,7 +1,6 @@
 # gateway/config/pydantic_models.py
 """Pydantic models used for typed LLM responses and envelopes."""
 from pydantic import BaseModel, Field, constr
-from typing import List
 
 NonEmptyStr = constr(strip_whitespace=True, min_length=1)
 
@@ -34,9 +33,7 @@ class FeedbackEnvelope(BaseModel):
         default=False,
         description="Flag to set true if any problem is encountered.",
     )
-    errors: List[str] = Field(
-        default_factory=list, description="Human-readable reasons for error"
-    )
+    errors: list[str] = Field(default_factory=list, description="Human-readable reasons for error")
 
 
 class ChatServiceResponse(BaseModel):

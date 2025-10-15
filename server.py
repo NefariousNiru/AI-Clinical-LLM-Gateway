@@ -1,23 +1,23 @@
-# gateway/server.py
+# server.py
 import asyncio
+import signal
 from logging import Logger
+
 import grpc
 from grpc import Server
+
+import gateway.util.logger as lg
 from gateway.auth_token_interceptor import AuthTokenInterceptor
 from gateway.config.settings import settings
 from gateway.grader.v1 import grader_pb2_grpc
 from gateway.service import grader_service
-import signal
-import gateway.util.logger as lg
 
 
 def bind_port(server: Server, logger: Logger):
     bind_addr = f"{settings.host}:{settings.port}"
     if settings.tls_enabled:
         if not settings.tls_cert_path or not settings.tls_key_path:
-            logger.error(
-                "TLS enabled but GATEWAY_TLS_CERT_PATH or GATEWAY_TLS_KEY_PATH missing"
-            )
+            logger.error("TLS enabled but GATEWAY_TLS_CERT_PATH or GATEWAY_TLS_KEY_PATH missing")
             raise SystemExit(1)
         try:
             with open(settings.tls_key_path, "rb") as f:

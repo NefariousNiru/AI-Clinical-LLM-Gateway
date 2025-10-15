@@ -1,8 +1,8 @@
 import asyncio
-import socket
-import grpc
 import re
-from typing import Optional
+import socket
+
+import grpc
 
 # httpx is used under the hood by both SDKs; import defensively
 try:
@@ -11,17 +11,27 @@ except Exception:  # pragma: no cover
     httpx = None  # type: ignore
 
 from pydantic import ValidationError
-from gateway.util.errors import AppError, ErrorKind, ErrorMessages
-from gateway.util.errors import TerminalError, TransientError
+
+from gateway.util.errors import AppError, ErrorKind, ErrorMessages, TerminalError, TransientError
 
 # -------- Provider SDK imports (tolerate absence) --------
 try:
     from openai import (
         APIError as OpenAIApiError,
-        AuthenticationError as OpenAIAuthError,
-        BadRequestError as OpenAIBadRequestError,
+    )
+    from openai import (
         APITimeoutError as OpenAITimeoutError,
+    )
+    from openai import (
+        AuthenticationError as OpenAIAuthError,
+    )
+    from openai import (
+        BadRequestError as OpenAIBadRequestError,
+    )
+    from openai import (
         NotFoundError as OpenAINotFoundError,
+    )
+    from openai import (
         RateLimitError as OpenAIRateLimitError,
     )
 except Exception:  # pragma: no cover
@@ -32,16 +42,26 @@ except Exception:  # pragma: no cover
 try:
     from anthropic import (
         APIError as AnthropicApiError,
-        AuthenticationError as AnthropicAuthError,
-        BadRequestError as AnthropicBadRequestError,
-        NotFoundError as AnthropicNotFoundError,
-        RateLimitError as AnthropicRateLimitError,
+    )
+    from anthropic import (
         APITimeoutError as AnthropicAPITimeoutError,
     )
+    from anthropic import (
+        AuthenticationError as AnthropicAuthError,
+    )
+    from anthropic import (
+        BadRequestError as AnthropicBadRequestError,
+    )
+    from anthropic import (
+        NotFoundError as AnthropicNotFoundError,
+    )
+    from anthropic import (
+        RateLimitError as AnthropicRateLimitError,
+    )
 except Exception:  # pragma: no cover
-    AnthropicApiError = AnthropicAuthError = AnthropicBadRequestError = (
-        AnthropicNotFoundError
-    ) = AnthropicRateLimitError = AnthropicAPITimeoutError = None
+    AnthropicApiError = AnthropicAuthError = AnthropicBadRequestError = AnthropicNotFoundError = (
+        AnthropicRateLimitError
+    ) = AnthropicAPITimeoutError = None
 
 # -------- Policy & heuristics --------
 TREAT_RATE_LIMIT_AS_TERMINAL = True
@@ -64,7 +84,7 @@ def _is_model_not_found(msg: str) -> bool:
     return any(h in m for h in MODEL_NOT_FOUND_HINTS)
 
 
-def _status_code_of(e: Exception) -> Optional[int]:
+def _status_code_of(e: Exception) -> int | None:
     sc = getattr(e, "status_code", None)
     if isinstance(sc, int):
         return sc
@@ -83,7 +103,7 @@ def _status_code_of(e: Exception) -> Optional[int]:
 
 
 # -------- Small constructors (short, stable details; raw in cause) --------
-def _rate_limited(cause: Optional[str]) -> AppError:
+def _rate_limited(cause: str | None) -> AppError:
     if TREAT_RATE_LIMIT_AS_TERMINAL:
         return AppError(
             TerminalError.RATE_LIMITED,
@@ -205,7 +225,7 @@ def classify_exception(e: Exception) -> AppError:
             TerminalError.AUTH_FAILED,
             ErrorKind.TERMINAL,
             grpc.StatusCode.UNAUTHENTICATED,
-            TerminalError.AUTH_FAILED,
+            ErrorMessages.AUTH_FAILED,
             str(e),
         )
     if (OpenAINotFoundError and isinstance(e, OpenAINotFoundError)) or (

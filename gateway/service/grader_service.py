@@ -1,15 +1,13 @@
 # gateway/service/grader_service.py
+import logging
 import time
-from typing import Optional
 import grpc
-from gateway.config.pydantic_models import ProblemFeedback, ChatServiceResponse
+from gateway.config.pydantic_models import ChatServiceResponse, ProblemFeedback, FeedbackSection
 from gateway.config.settings import settings
-from gateway.grader.v1 import grader_pb2_grpc, grader_pb2
-from gateway.grader.v1.grader_pb2 import FeedbackSection
+from gateway.grader.v1 import grader_pb2, grader_pb2_grpc
 from gateway.providers.provider_registry import get_provider
 from gateway.service.chat_service import ChatService
-from gateway.util.errors import TerminalError, TransientError, AppError, ErrorMessages
-import logging
+from gateway.util.errors import AppError, ErrorMessages, TerminalError, TransientError
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +82,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             )
 
     @staticmethod
-    async def _get_chat_service(request, context) -> Optional[ChatService]:
+    async def _get_chat_service(request, context) -> ChatService | None:
         try:
             return ChatService(raw_client=get_provider(request.model_provider))
 
@@ -93,13 +91,13 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 context,
                 grpc.StatusCode.INVALID_ARGUMENT,
                 TerminalError.UNSUPPORTED_MODEL,
-                f"{ErrorMessages.UNSUPPORTED_PROVIDER}: {str(e)}",
+                f"{ErrorMessages.UNSUPPORTED_PROVIDER}: {e!s}",
             )
 
     @staticmethod
     async def _perform_grading(
         chat_service: ChatService, request, context
-    ) -> Optional[ProblemFeedback]:
+    ) -> ProblemFeedback | None:
         logger.info(
             "Grade request: provider=%s model=%s trace_id=%s job_id=%s",
             request.model_provider,
@@ -169,9 +167,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         return grader_pb2.ProblemFeedback(
             name=feedback.name,
             is_priority=feedback.is_priority,
-            identification=self._pydantic_to_proto_feedback_section(
-                feedback.identification
-            ),
+            identification=self._pydantic_to_proto_feedback_section(feedback.identification),
             explanation=self._pydantic_to_proto_feedback_section(feedback.explanation),
             plan_recommendation=self._pydantic_to_proto_feedback_section(
                 feedback.plan_recommendation

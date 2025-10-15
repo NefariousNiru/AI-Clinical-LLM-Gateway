@@ -1,6 +1,7 @@
 # gateway/util/errors.py
 from dataclasses import dataclass
 from enum import Enum
+
 import grpc
 
 
@@ -53,18 +54,14 @@ class ErrorMessages:
     INVALID_USER_PROMPT = "The user prompt is invalid or empty."
     QUOTA_EXCEEDED = "Quota exceeded. Please upgrade your plan or try again later."
     RATE_LIMITED = "Too many requests. Please slow down and retry after some time."
-    CONTEXT_TOO_LONG = (
-        "The input exceeds the maximum context length supported by the model."
-    )
+    CONTEXT_TOO_LONG = "The input exceeds the maximum context length supported by the model."
     INVALID_PAYLOAD = "Invalid payload received."
     UNEXPECTED_ERROR = "An unexpected error occurred."
 
     # Transient errors (retryable)
     PROVIDER_TIMEOUT = "The provider did not respond in time. Please retry."
     NETWORK_ERROR = "A network issue occurred while contacting the provider."
-    PROVIDER_5XX = (
-        "The provider encountered an internal error (5xx). Retry may succeed."
-    )
+    PROVIDER_5XX = "The provider encountered an internal error (5xx). Retry may succeed."
     SCHEMA_MISMATCH = "The model's response did not match the expected schema."
     LLM_SIGNALED_ERROR = "The model signaled an internal error or aborted unexpectedly."
 

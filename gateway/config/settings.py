@@ -1,10 +1,10 @@
 # gateway/config/settings.py
+import logging
+import os
 import sys
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from pydantic.v1 import BaseSettings, Field
-import logging
-import os
 
 logger = logging.getLogger(__name__)
 

@@ -6,26 +6,26 @@ Responsibilities:
 - Convert provider/instructor failures into AppError using classify_exception.
 - Avoid logging sensitive prompt/response contents at INFO level.
 """
+import logging
 import grpc
 import instructor
+from anthropic import AsyncAnthropic
 from instructor import AsyncInstructor
 from openai import AsyncOpenAI
 from openai.types.chat import (
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
-from anthropic import AsyncAnthropic
 from pydantic import ValidationError
 from gateway.config.pydantic_models import (
-    FeedbackEnvelope,
     ChatServiceResponse,
+    FeedbackEnvelope,
 )
 from gateway.config.settings import settings
-import logging
 from gateway.providers.dummy_provider import DummyProvider
 from gateway.providers.provider_registry import Provider
 from gateway.util.error_mapping import classify_exception
-from gateway.util.errors import AppError, TransientError, ErrorKind, ErrorMessages
+from gateway.util.errors import AppError, ErrorKind, ErrorMessages, TransientError
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,7 @@ class ChatService:
         if isinstance(raw_client, AsyncOpenAI):
             self.client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
         elif isinstance(raw_client, AsyncAnthropic):
-            self.client = instructor.from_anthropic(
-                raw_client, mode=instructor.Mode.ANTHROPIC_JSON
-            )
+            self.client = instructor.from_anthropic(raw_client, mode=instructor.Mode.ANTHROPIC_JSON)
         elif isinstance(raw_client, DummyProvider):
             self.client = raw_client
 
@@ -145,18 +143,12 @@ class ChatService:
             kwargs["max_tokens"] = settings.anthropic_max_tokens
 
         # 3) Call chat, get (pydantic model, raw message)
-        envelope, completion = (
-            await self.client.chat.completions.create_with_completion(**kwargs)
-        )
+        envelope, completion = await self.client.chat.completions.create_with_completion(**kwargs)
 
         # 4) Normalize token fields across providers
         usage = getattr(completion, "usage", None)
-        input_tokens = getattr(
-            usage, "prompt_tokens", getattr(usage, "input_tokens", None)
-        )
-        output_tokens = getattr(
-            usage, "completion_tokens", getattr(usage, "output_tokens", None)
-        )
+        input_tokens = getattr(usage, "prompt_tokens", getattr(usage, "input_tokens", None))
+        output_tokens = getattr(usage, "completion_tokens", getattr(usage, "output_tokens", None))
 
         # 5) Return ChatServiceResponse
         return ChatServiceResponse(

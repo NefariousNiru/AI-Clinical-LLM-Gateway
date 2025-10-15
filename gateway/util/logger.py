@@ -1,6 +1,9 @@
 # gateway/util/logger.py
-import logging, os, sys
+import logging
+import os
+import sys
 from logging.handlers import RotatingFileHandler
+
 from gateway.config.settings import settings
 
 # Optional: capture warnings.* into logging

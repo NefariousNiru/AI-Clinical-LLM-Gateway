@@ -1,9 +1,9 @@
 # gateway/providers/dummy_provider.py
 from gateway.config.pydantic_models import (
-    ProblemFeedback,
-    FeedbackSection,
-    FeedbackEnvelope,
     ChatServiceResponse,
+    FeedbackEnvelope,
+    FeedbackSection,
+    ProblemFeedback,
 )
 
 

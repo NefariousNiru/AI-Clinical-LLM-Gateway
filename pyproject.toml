@@ -5,6 +5,7 @@ description = "The LLM gateway for the AI-Clinical-Backend"
 authors = ["Nirupom Bose Roy <nirupomboseroy99@gmail.com>"]
 readme = "README.md"
 license = "LICENSE.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -13,12 +14,21 @@ pydantic = "^2.11.7"
 grpcio-tools = "^1.74.0"
 uvloop = { version = "^0.21.0", markers = "platform_system != 'Windows'" }
 python-dotenv = "^1.1.1"
-black = "^25.1.0"
 openai = "^1.102.0"
 ollama = "^0.5.3"
 instructor = "^1.11.3"
 anthropic = "^0.68.0"
 
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.14.0"
+black = "^25.1.0"
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
 
 [build-system]
 requires = ["poetry-core"]
