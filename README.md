@@ -25,13 +25,17 @@ A lightweight, async gRPC gateway that normalizes access to multiple LLM provide
 │       ├── error_mapping.py
 │       ├── errors.py
 │       └── logger.py
-├── proto
-│   └── grader.proto
-├── server.py
-├── pyproject.toml
-├── poetry.lock
+├── LICENSE.md
 ├── Makefile
-└── README.md
+├── Makefile.protos
+├── poetry.toml
+├── proto
+│   └── grader.proto  # Proto Buff
+├── pyproject.toml
+├── pytest.ini
+├── README.md
+├── server.py
+└── tests
 ```
 
 ---
@@ -69,7 +73,7 @@ client (grpc / grpcurl / backend) ──▶ GraderService (async gRPC)
 ### Install
 
 ```bash
-poetry install --no-root
+poetry install
 ```
 
 ### Configure env
@@ -153,6 +157,10 @@ docker run --rm -p 50051:50051 \
 * `ProblemFeedback` includes `identification`, `explanation`, `plan_recommendation`, `monitoring` each as `FeedbackSection { score, evaluation, feedback }`.
 
 > The gateway converts the internal Pydantic model to proto on the wire. Keep both in sync when editing.
+> To generate stubs run: 
+> `make -f Makefile.protos`
+
+* The import will have to change, run to figure out
 
 **Backwards compat tips**
 
@@ -247,18 +255,11 @@ x-gateway-token: <SHARED_TOKEN>
 * **Provider isolation**: add provider‑specific knobs inside `ChatService._get_response`, not scattered through the codebase.
 * **Idempotent logger init**: reuse `init_logger` at process start to avoid duplicate handlers.
 * **Lints**: target `ruff` + `black` defaults, and `mypy --strict` in CI. No unused vars, no `Any` leaks, explicit return types.
-* **Testing rule of 3**: unit tests for error mapping, ChatService happy path for each provider, and gRPC service E2E with dummy provider.
-
-Suggested tools config to be run periodically:
-
-```bash
-poetry run ruff check --fix
-black .
-```
+* **Testing**: Please write unit tests for each feature you develop and run `make` to execute `pytest` and format the code.
 
 ---
 
-## 11) Known issues and fixes
+## 11) Current Issues
 
 1. **TLS cert path settings missing**
 
@@ -273,11 +274,7 @@ class Settings(BaseSettings):
     tls_key_path: str | None = Field(None, env="GATEWAY_TLS_KEY_PATH")
 ```
 
-2. **Future schema drift risk**
-
-* The proto and Pydantic models must evolve together. Add a test that round‑trips `ProblemFeedback` Pydantic → proto and asserts equality of all fields.
-
-3. **Health Check**
+2. **Health Check**
 * Provide a `HEALTHCHECK` that pings a lightweight reflection or a custom health RPC.
 
 ---
