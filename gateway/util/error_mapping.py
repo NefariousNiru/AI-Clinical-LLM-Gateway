@@ -1,3 +1,19 @@
+# gateway/util/error_mapping.py
+"""
+Maps provider/SDK exceptions to AppError with stable codes and gRPC status.
+
+Decision order:
+  1) HTTP status-code (robust to SDK churn)
+  2) SDK-specific exception classes (OpenAI/Anthropic)
+  3) Generic timeouts/network/httpx
+  4) Fallback -> unexpected_error
+
+Policy:
+  - TREAT_RATE_LIMIT_AS_TERMINAL: if True, 429 -> Terminal (RESOURCE_EXHAUSTED).
+  - Context-length and model-not-found are normalized to specific Terminal codes.
+
+This layer is the single source of truth for error semantics surfaced by gRPC.
+"""
 import asyncio
 import re
 import socket
@@ -180,6 +196,11 @@ def _network(msg: str) -> AppError:
 
 # ------------ Public classifier ------------
 def classify_exception(e: Exception) -> AppError:
+    """
+    Normalize arbitrary exceptions into AppError with stable code/kind/grpc_status.
+    Returns:
+        AppError: One of Terminal/Transient variants defined in `gateway.util.errors`.
+    """
     # 0) Instructor / Pydantic
     if isinstance(e, ValidationError):
         return AppError(

@@ -1,4 +1,4 @@
-# gateway/service/ChatService.py
+# gateway/service/chat_service.py
 """Concrete chat service using Instructor for strict schema parsing.
 
 Responsibilities:
@@ -114,10 +114,25 @@ class ChatService:
         model_name: str,
     ) -> ChatServiceResponse:
         """Call the chat model with Instructor enforcing FeedbackEnvelope.
-        Notes:
-            - We pass through INSTRUCTOR_MAX_RETRY for Instructor's internal retry.
-            - Temperature is omitted for GPT-5* models
-            - Anthropic requires passing max_tokens
+
+        Behavior:
+            - Uses Instructor to coerce the model output into `FeedbackEnvelope` (strict=True).
+            - Retries are governed by INSTRUCTOR_MAX_RETRY (from settings).
+            - Temperature is skipped for GPT-5* models, per provider constraints.
+            - Anthropic requires `max_tokens` and is passed via settings.
+
+        Token normalization:
+            - Different SDKs expose usage fields differently. We normalize as:
+              input_tokens  := usage.prompt_tokens OR usage.input_tokens
+              output_tokens := usage.completion_tokens OR usage.output_tokens
+            - If a provider omits usage entirely, these may be None.
+
+        Returns:
+            ChatServiceResponse with the parsed envelope and normalized token counts.
+
+        Raises:
+            AppError via classify_exception for provider/SDK issues.
+            ValidationError when the model output fails schema validation.
         """
         # 1) Create kwargs for chat
         assert isinstance(self.client, AsyncInstructor)

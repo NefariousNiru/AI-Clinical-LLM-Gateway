@@ -7,6 +7,18 @@ from gateway.util.errors import ErrorMessages, TerminalError
 
 
 class AuthTokenInterceptor(grpc.aio.ServerInterceptor):
+    """
+    Server-side interceptor enforcing a shared token via gRPC metadata.
+
+    Expects:
+        - Metadata key: settings.shared_token_key (e.g., "x-gateway-token")
+        - Value: exact match with `expected_token`
+
+    On mismatch:
+        - Sets trailing metadata (settings.error_metadata_key, "auth_failed")
+        - Aborts with StatusCode.UNAUTHENTICATED and ErrorMessages.AUTH_FAILED
+    """
+
     def __init__(self, expected_token: str | None):
         if not expected_token.strip():
             raise RuntimeError(ErrorMessages.SET_SHARED_TOKEN)

@@ -1,4 +1,14 @@
 # gateway/providers/dummy_provider.py
+"""Schema-synced dummy provider for tests and local development.
+
+Purpose:
+- Return a deterministic, schema-valid ChatServiceResponse without calling any LLM.
+- Enables exercising service paths, gRPC wiring, and UI flows offline.
+
+Maintenance:
+- The returned payload mirrors the current FeedbackEnvelope/ProblemFeedback schema.
+- If pydantic models change, update this file to keep test coverage meaningful.
+"""
 from gateway.config.pydantic_models import (
     ChatServiceResponse,
     FeedbackEnvelope,
