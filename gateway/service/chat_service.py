@@ -3,9 +3,10 @@
 
 Responsibilities:
 - Call the model through Instructor with JSON → Pydantic enforcement.
-- Surface validation failures as ValueError('schema_mismatch: ...').
+- Convert provider/instructor failures into AppError using classify_exception.
 - Avoid logging sensitive prompt/response contents at INFO level.
 """
+import grpc
 import instructor
 from instructor import AsyncInstructor
 from openai import AsyncOpenAI
@@ -23,6 +24,8 @@ from gateway.config.settings import settings
 import logging
 from gateway.providers.dummy_provider import DummyProvider
 from gateway.providers.provider_registry import Provider
+from gateway.util.error_mapping import classify_exception
+from gateway.util.errors import AppError, TransientError, ErrorKind, ErrorMessages
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,6 @@ class ChatService:
 
     def __init__(self, raw_client: Provider):
         self.raw_client = raw_client
-
         if isinstance(raw_client, AsyncOpenAI):
             self.client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
         elif isinstance(raw_client, AsyncAnthropic):
@@ -60,10 +62,17 @@ class ChatService:
         :param trace_id: Correlation id for observability.
         :param job_id: Backend job identifier for traceability.
 
-        :raises ValueError('schema_mismatch: ...') on validation errors.
-        :raises ValueError('llm_error: ...') if the envelope reports error=True.
+        :raises AppError
         :return: ChatServiceResponse.
         """
+        logger.debug(
+            "ChatService.grade start provider=%s model=%s trace_id=%s job_id=%s",
+            type(self.raw_client).__name__,
+            model_name,
+            trace_id,
+            job_id,
+        )
+
         # 0) If Dummy Provider
         if isinstance(self.raw_client, DummyProvider):
             return self.raw_client.get_dummy_response()
@@ -76,36 +85,29 @@ class ChatService:
                 model_name=model_name,
             )
 
-            # 2) Check if LLM Generated an Error
+            # 2) Check if LLM Generated an Error - Treat as transient
             if response.envelope.error:
                 reason = (
                     "; ".join(response.envelope.errors)
                     if response.envelope.errors
                     else "unspecified error"
                 )
-                raise ValueError(f"llm_error: {reason}")
+                raise AppError(
+                    code=TransientError.LLM_SIGNALED_ERROR,
+                    kind=ErrorKind.TRANSIENT,
+                    grpc_status=grpc.StatusCode.UNAVAILABLE,
+                    details=ErrorMessages.LLM_SIGNALED_ERROR,
+                    cause=reason,
+                )
 
             return response
 
+        except AppError:
+            raise
         except ValidationError as ve:
-            logger.warning(
-                "Validation error from provider [trace_id=%s, job_id=%s]: %s",
-                trace_id,
-                job_id,
-                ve,
-            )
-            raise ValueError(f"schema_mismatch: {ve}")
-
+            raise classify_exception(ve)
         except Exception as e:
-            logger.error(
-                "Provider request failed [trace_id=%s, job_id=%s, model=%s]: %s",
-                trace_id,
-                job_id,
-                model_name,
-                e,
-                exc_info=True,
-            )
-            raise e
+            raise classify_exception(e)
 
     async def _get_response(
         self,

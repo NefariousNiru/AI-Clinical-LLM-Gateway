@@ -1,9 +1,12 @@
 # gateway/config/settings.py
 import sys
 from dotenv import load_dotenv
+from pydantic import ValidationError
 from pydantic.v1 import BaseSettings, Field
 import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 if os.getenv("APP_ENV", "dev") == "dev":
     load_dotenv()
@@ -14,6 +17,7 @@ class Settings(BaseSettings):
     host: str = Field("0.0.0.0", env="HOST")
     port: int = Field(50051, env="PORT")
     ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
+    error_metadata_key: str = "x-error-code"
     shared_token_key: str = "x-gateway-token"
     shared_token: str | None = Field(None, env="SHARED_TOKEN")
 
@@ -35,7 +39,13 @@ class Settings(BaseSettings):
 
 try:
     settings = Settings()
+except ValidationError as e:
+    logger.error("❌ Missing/invalid environment variables:")
+    for err in e.errors():
+        loc = ".".join(str(x) for x in err.get("loc", []))
+        msg = err.get("msg", "")
+        logger.error(f" - {loc}: {msg}")
+    sys.exit(1)
 except Exception as e:
-    logger = logging.getLogger(__name__)
-    logger.exception("Settings initialization failed in ./gateway/config/settings.py")
+    logger.error(f"❌ Settings initialization failed: {e}")
     sys.exit(1)

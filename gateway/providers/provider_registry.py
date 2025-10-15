@@ -17,7 +17,12 @@ Provider = Union[AsyncOpenAI, AsyncAnthropic, DummyProvider]
 
 
 def get_provider(name: str) -> Provider:
+    """
+    :raises ValueError
+    :param name: Provider name
+    :return: Provider instance
+    """
     try:
         return PROVIDER_REGISTER[name.lower()]()
     except KeyError:
-        raise ValueError(f"Unsupported provider: {name}")
+        raise ValueError(f"{name}")
