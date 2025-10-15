@@ -1,7 +1,5 @@
 # gateway/auth_token_interceptor.py
-
 import grpc
-
 from gateway.config.settings import settings
 from gateway.util.errors import ErrorMessages, TerminalError
 

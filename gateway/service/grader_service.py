@@ -1,4 +1,11 @@
 # gateway/service/grader_service.py
+"""Core grading service invoked by GRPC Grade method.
+
+Responsibilities:
+- Call the underlying ChatProvider (model provider)
+- Delegate Grading to Provider
+- Handle top level errors and return appropriate responses.
+"""
 import logging
 import time
 import grpc
@@ -83,6 +90,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
 
     @staticmethod
     async def _get_chat_service(request, context) -> ChatService | None:
+        """Return a chat service based on argument based request.model_provider"""
         try:
             return ChatService(raw_client=get_provider(request.model_provider))
 
@@ -98,6 +106,8 @@ class GraderService(grader_pb2_grpc.GraderServicer):
     async def _perform_grading(
         chat_service: ChatService, request, context
     ) -> ProblemFeedback | None:
+        """Helper to delegate, deal with errors and send back response for grading"""
+        # 1) Log start
         logger.info(
             "Grade request: provider=%s model=%s trace_id=%s job_id=%s",
             request.model_provider,
@@ -106,7 +116,10 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             request.job_id,
         )
         try:
+            # 2) Start counter
             model_start = time.perf_counter()
+
+            # 3) Delegate grading to ChatService
             response: ChatServiceResponse = await chat_service.grade(
                 system_prompt=request.system_prompt,
                 user_prompt=request.user_prompt,
@@ -114,6 +127,8 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 trace_id=request.trace_id,
                 job_id=request.job_id,
             )
+
+            # 4) Log Finish
             logger.info(
                 "Grade success: provider=%s model=%s input_tokens=%s output_tokens=%s trace_id=%s job_id=%s. Model Took %.3f seconds",
                 request.model_provider,
@@ -124,8 +139,11 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 request.job_id,
                 time.perf_counter() - model_start,
             )
+
+            # 5) Return
             return response.envelope.feedback
 
+        # 6) Exceptions
         except AppError as ae:
             logger.error(
                 "Provider error code=%s kind=%s status=%s trace_id=%s job_id=%s details=%s",
@@ -155,6 +173,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
     def _pydantic_to_proto_feedback_section(
         section: FeedbackSection,
     ) -> grader_pb2.FeedbackSection:
+        """Adapters for pydantic to proto feedback sections."""
         return grader_pb2.FeedbackSection(
             score=section.score,
             evaluation=section.evaluation,
@@ -164,6 +183,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
     def _pydantic_to_proto_problem_feedback(
         self, feedback: ProblemFeedback
     ) -> grader_pb2.ProblemFeedback:
+        """Adapters for pydantic to proto problem feedback."""
         return grader_pb2.ProblemFeedback(
             name=feedback.name,
             is_priority=feedback.is_priority,

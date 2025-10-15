@@ -17,20 +17,15 @@ This layer is the single source of truth for error semantics surfaced by gRPC.
 import asyncio
 import re
 import socket
-
 import grpc
 
-# httpx is used under the hood by both SDKs; import defensively
 try:
     import httpx
-except Exception:  # pragma: no cover
-    httpx = None  # type: ignore
-
+except Exception:
+    httpx = None
 from pydantic import ValidationError
-
 from gateway.util.errors import AppError, ErrorKind, ErrorMessages, TerminalError, TransientError
 
-# -------- Provider SDK imports (tolerate absence) --------
 try:
     from openai import (
         APIError as OpenAIApiError,
@@ -54,7 +49,6 @@ except Exception:  # pragma: no cover
     OpenAIApiError = OpenAIAuthError = OpenAIBadRequestError = OpenAITimeoutError = (
         OpenAINotFoundError
     ) = OpenAIRateLimitError = None
-
 try:
     from anthropic import (
         APIError as AnthropicApiError,

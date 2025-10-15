@@ -1,8 +1,7 @@
 # gateway/util/errors.py
+import grpc
 from dataclasses import dataclass
 from enum import Enum
-
-import grpc
 
 
 class ErrorKind(Enum):
