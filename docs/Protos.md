@@ -24,3 +24,6 @@ You **must** change them to the package-qualified form:
 import gateway.grader.v1.grader_pb2 as grader__pb2
 ```
 Do this in both `grader_pb2_grpc.py` and any other generated modules that import `grader_pb2`.
+
+#### Important 
+> Now copy the three files generated above to the backend in the folder `gateway/grader` -> paste all three files in this directory
