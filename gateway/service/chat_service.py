@@ -160,8 +160,8 @@ class ChatService:
             response_model=FeedbackEnvelope,
             model=model_name,
             messages=[
-                ChatCompletionSystemMessageParam(role="system", content=system_prompt),
-                ChatCompletionUserMessageParam(role="user", content=user_prompt),
+                ChatCompletionSystemMessageParam(role="system", content=system_prompt.strip()),
+                ChatCompletionUserMessageParam(role="user", content=user_prompt.strip()),
             ],
             max_retries=settings.instructor_max_retry,
             strict=True,
