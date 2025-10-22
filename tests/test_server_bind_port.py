@@ -3,7 +3,7 @@ import pytest
 import grpc
 
 from gateway.config.settings import settings
-from server import bind_port
+from server import _bind_port
 
 
 class DummyLogger:
@@ -26,4 +26,4 @@ def test_bind_port_tls_missing_paths(monkeypatch):
     logger = DummyLogger()
     server = grpc.aio.server()
     with pytest.raises(SystemExit):
-        bind_port(server, logger)  # should exit due to missing cert/key paths
+        _bind_port(server, logger)  # should exit due to missing cert/key paths

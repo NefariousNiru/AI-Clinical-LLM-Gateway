@@ -1,4 +1,9 @@
-# gateway/config/settings.py
+"""
+file: gateway/config/settings.py
+
+Top Level App-Settings
+"""
+
 import logging
 import os
 import sys
@@ -13,7 +18,7 @@ if os.getenv("APP_ENV", "dev") == "dev":
 
 
 class Settings(BaseSettings):
-    # App
+    # 1) App
     host: str = Field("0.0.0.0", env="HOST")
     port: int = Field(50051, env="PORT")
     ollama_host: str = Field("http://127.0.0.1:11434", env="OLLAMA_HOST")
@@ -21,19 +26,19 @@ class Settings(BaseSettings):
     shared_token_key: str = "x-gateway-token"
     shared_token: str | None = Field(None, env="SHARED_TOKEN")
 
-    # API Keys
+    # 2) API Keys
     openai_api_key: str | None = Field(None, env="OPENAI_API_KEY")
     anthropic_api_key: str | None = Field(None, env="ANTHROPIC_API_KEY")
 
-    # Model Behaviour
+    # 3) Model Behaviour
     model_temperature: float = Field(0, env="MODEL_TEMPERATURE")
     instructor_max_retry: int = Field(3, env="INSTRUCTOR_MAX_RETRY")
     anthropic_max_tokens: int = Field(5000, env="ANTHROPIC_MAX_TOKENS")
 
-    # Logging
+    # 4) Logging
     log_level: str = Field("INFO", env="LOG_LEVEL")
 
-    # TLS
+    # 5) TLS
     tls_enabled: bool = Field(False, env="TLS_ENABLED")
 
 

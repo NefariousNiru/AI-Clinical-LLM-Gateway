@@ -1,16 +1,43 @@
-# gateway/util/errors.py
+"""
+file: gateway/util/errors.py
+
+Typed error primitives for the gateway layer.
+
+- ErrorKind: terminal vs transient classification.
+- AppError: canonical error shape surfaced across the gateway.
+- TerminalError / TransientError: stable machine-readable codes.
+- ErrorMessages: short, user-facing messages for each error category.
+"""
+
 import grpc
 from dataclasses import dataclass
 from enum import Enum
 
 
 class ErrorKind(Enum):
+    """
+    Attributes:
+        TERMINAL: Non-retryable error; caller should not auto-retry.
+        TRANSIENT: Retryable error; caller may retry with backoff.
+    """
+
     TERMINAL = "TERMINAL"
     TRANSIENT = "TRANSIENT"
 
 
 @dataclass
 class AppError(Exception):
+    """
+    Canonical gateway error carrying a stable code, kind, gRPC status, and message.
+
+    Attributes:
+        code (str): Stable machine-readable error code (see TerminalError/TransientError).
+        kind (ErrorKind): Whether the error is TERMINAL or TRANSIENT.
+        grpc_status (grpc.StatusCode): gRPC status to return on the wire.
+        details (str): Short human-readable description suitable for logs/clients.
+        cause (Optional[str]): Optional raw/provider-specific detail for debugging.
+    """
+
     code: str
     kind: ErrorKind
     grpc_status: grpc.StatusCode
@@ -21,7 +48,24 @@ class AppError(Exception):
         return f"{self.code} [{self.kind.value}]: {self.details}"
 
 
+@dataclass(frozen=True)
 class TerminalError:
+    """
+    Stable terminal error codes (non-retryable).
+
+    Attributes:
+        AUTH_FAILED: Authentication/authorization failed.
+        UNSUPPORTED_MODEL: Requested model is not available/supported.
+        UNSUPPORTED_PROVIDER: Requested provider is not supported.
+        INVALID_SYSTEM_PROMPT: System prompt missing or malformed.
+        INVALID_USER_PROMPT: User prompt missing or malformed.
+        QUOTA_EXCEEDED: Account quota exceeded.
+        RATE_LIMITED: Request rate limited (policy dependent).
+        CONTEXT_TOO_LONG: Input exceeded model context window.
+        UNEXPECTED_ERROR: Unknown/uncategorized terminal failure.
+        INVALID_PAYLOAD: Client sent an invalid payload.
+    """
+
     AUTH_FAILED = "auth_failed"
     UNSUPPORTED_MODEL = "unsupported_model"
     UNSUPPORTED_PROVIDER = "unsupported_provider"
@@ -34,7 +78,19 @@ class TerminalError:
     INVALID_PAYLOAD = "invalid_payload"
 
 
+@dataclass(frozen=True)
 class TransientError:
+    """
+    Stable transient error codes (retryable).
+
+    Attributes:
+        PROVIDER_TIMEOUT: Upstream provider timed out.
+        NETWORK_ERROR: Network/transport failure.
+        PROVIDER_5XX: Provider returned a 5xx error.
+        SCHEMA_MISMATCH: Model output failed schema validation.
+        LLM_SIGNALED_ERROR: Model indicated an internal error.
+    """
+
     PROVIDER_TIMEOUT = "provider_timeout"
     NETWORK_ERROR = "network_error"
     PROVIDER_5XX = "provider_5xx"
@@ -42,8 +98,31 @@ class TransientError:
     LLM_SIGNALED_ERROR = "llm_signaled_error"
 
 
+@dataclass(frozen=True)
 class ErrorMessages:
-    """Maps messages for TransientError and TerminalError and Others"""
+    """
+    Short, user-facing messages corresponding to error codes.
+
+    Attributes:
+        AUTH_FAILED: authentication failures.
+        UNSUPPORTED_MODEL: unsupported model requests.
+        UNSUPPORTED_PROVIDER: unsupported provider requests.
+        INVALID_SYSTEM_PROMPT: invalid system prompt.
+        INVALID_USER_PROMPT: invalid user prompt.
+        QUOTA_EXCEEDED: quota exhaustion.
+        RATE_LIMITED: rate limiting.
+        CONTEXT_TOO_LONG: context window overflow.
+        INVALID_PAYLOAD: invalid client payloads.
+        UNEXPECTED_ERROR: uncategorized failures.
+
+        PROVIDER_TIMEOUT: provider timeouts.
+        NETWORK_ERROR: network issues.
+        PROVIDER_5XX: provider 5xx errors.
+        SCHEMA_MISMATCH: schema validation failures.
+        LLM_SIGNALED_ERROR: when model signals an error.
+
+        SET_SHARED_TOKEN: when shared token env is not configured.
+    """
 
     # Terminal errors (non-retryable)
     AUTH_FAILED = "Authentication failed. Please check your API key or credentials."

@@ -1,119 +1,115 @@
 # gateway/util/error_mapping.py
 """
-Maps provider/SDK exceptions to AppError with stable codes and gRPC status.
+file: gateway/util/error_mapping.py
 
-Decision order:
-  1) HTTP status-code (robust to SDK churn)
-  2) SDK-specific exception classes (OpenAI/Anthropic)
-  3) Generic timeouts/network/httpx
-  4) Fallback -> unexpected_error
+Error normalization layer: converts diverse provider/SDK exceptions into a single
+`AppError` type with stable codes, kinds, and gRPC statuses.
+
+Decision order (short-circuited):
+  1) HTTP status code (robust against SDK surface changes)
+  2) SDK-specific exception classes (OpenAI / Anthropic)
+  3) Generic timeouts / network / httpx
+  4) Fallback -> UNEXPECTED_ERROR
 
 Policy:
-  - TREAT_RATE_LIMIT_AS_TERMINAL: if True, 429 -> Terminal (RESOURCE_EXHAUSTED).
-  - Context-length and model-not-found are normalized to specific Terminal codes.
+  - TREAT_RATE_LIMIT_AS_TERMINAL: if True, 429 -> Terminal (RESOURCE_EXHAUSTED)
+  - Context-length and model-not-found hints map to specific Terminal codes
 
-This layer is the single source of truth for error semantics surfaced by gRPC.
+Notes on optional imports:
+  - Providers/SDKs (openai, anthropic, httpx) may be optional dependencies depending on
+    the runtime environment. We import them inside `try` blocks and gracefully degrade
+    to feature-detection via attributes and status-code paths when absent.
 """
+
+# 1) Imports & optional SDKs
 import asyncio
 import re
 import socket
 import grpc
-
-try:
-    import httpx
-except Exception:
-    httpx = None
 from pydantic import ValidationError
+
 from gateway.util.errors import AppError, ErrorKind, ErrorMessages, TerminalError, TransientError
 
-try:
-    from openai import (
+# Optional: httpx
+try:  # ok if httpx is not installed at runtime
+    import httpx  # type: ignore
+except Exception:  # pragma: no cover
+    httpx = None  # type: ignore
+
+# Optional: OpenAI SDK exceptions
+try:  # ok if openai is not installed
+    from openai import (  # type: ignore
         APIError as OpenAIApiError,
-    )
-    from openai import (
         APITimeoutError as OpenAITimeoutError,
-    )
-    from openai import (
         AuthenticationError as OpenAIAuthError,
-    )
-    from openai import (
         BadRequestError as OpenAIBadRequestError,
-    )
-    from openai import (
         NotFoundError as OpenAINotFoundError,
-    )
-    from openai import (
         RateLimitError as OpenAIRateLimitError,
     )
 except Exception:  # pragma: no cover
-    OpenAIApiError = OpenAIAuthError = OpenAIBadRequestError = OpenAITimeoutError = (
-        OpenAINotFoundError
-    ) = OpenAIRateLimitError = None
-try:
-    from anthropic import (
+    OpenAIApiError = OpenAITimeoutError = OpenAIAuthError = OpenAIBadRequestError = OpenAINotFoundError = OpenAIRateLimitError = None  # type: ignore
+
+# Optional: Anthropic SDK exceptions
+try:  # ok if anthropic is not installed
+    from anthropic import (  # type: ignore
         APIError as AnthropicApiError,
-    )
-    from anthropic import (
         APITimeoutError as AnthropicAPITimeoutError,
-    )
-    from anthropic import (
         AuthenticationError as AnthropicAuthError,
-    )
-    from anthropic import (
         BadRequestError as AnthropicBadRequestError,
-    )
-    from anthropic import (
         NotFoundError as AnthropicNotFoundError,
-    )
-    from anthropic import (
         RateLimitError as AnthropicRateLimitError,
     )
 except Exception:  # pragma: no cover
-    AnthropicApiError = AnthropicAuthError = AnthropicBadRequestError = AnthropicNotFoundError = (
-        AnthropicRateLimitError
-    ) = AnthropicAPITimeoutError = None
+    AnthropicApiError = AnthropicAPITimeoutError = AnthropicAuthError = AnthropicBadRequestError = AnthropicNotFoundError = AnthropicRateLimitError = None  # type: ignore
 
-# -------- Policy & heuristics --------
+
+# 2) Policy flags & heuristics
 TREAT_RATE_LIMIT_AS_TERMINAL = True
-CONTEXT_LEN_HINTS = ("maximum context length", "too long", "context_length_exceeded")
-MODEL_NOT_FOUND_HINTS = (
-    "model_not_found",
-    "does not exist",
-    "unknown model",
-    "no such model",
-)
+
+_CONTEXT_LEN_HINTS = ("maximum context length", "too long", "context_length_exceeded")
+_MODEL_NOT_FOUND_HINTS = ("model_not_found", "does not exist", "unknown model", "no such model")
+
+
+# 3) Small helpers
+def _match_any_instance(obj: object, classes: tuple | None) -> bool:
+    """Return True iff obj is an instance of any class in `classes` (when provided)."""
+    return bool(classes) and isinstance(obj, classes)  # type: ignore[arg-type]
 
 
 def _is_context_len(msg: str) -> bool:
     m = (msg or "").lower()
-    return any(h in m for h in CONTEXT_LEN_HINTS)
+    return any(h in m for h in _CONTEXT_LEN_HINTS)
 
 
 def _is_model_not_found(msg: str) -> bool:
     m = (msg or "").lower()
-    return any(h in m for h in MODEL_NOT_FOUND_HINTS)
+    return any(h in m for h in _MODEL_NOT_FOUND_HINTS)
 
 
 def _status_code_of(e: Exception) -> int | None:
+    """Best-effort extraction of an HTTP status code from diverse SDK exceptions."""
+    # 1) direct attribute
     sc = getattr(e, "status_code", None)
     if isinstance(sc, int):
         return sc
+    # 2) response.status_code (httpx, SDK wrappers)
     resp = getattr(e, "response", None)
     if resp is not None:
         sc = getattr(resp, "status_code", None)
         if isinstance(sc, int):
             return sc
+    # 3) last-ditch: parse digits in str(e)
     m = re.search(r"\b(4\d{2}|5\d{2})\b", str(e))
     if m:
         try:
             return int(m.group(1))
         except Exception:
-            pass
+            return None
     return None
 
 
-# -------- Small constructors (short, stable details; raw in cause) --------
-def _rate_limited(cause: str | None) -> AppError:
+# 4) Tiny constructors (stable AppError shapes)
+def _as_rate_limited(cause: str | None) -> AppError:
     if TREAT_RATE_LIMIT_AS_TERMINAL:
         return AppError(
             TerminalError.RATE_LIMITED,
@@ -122,7 +118,6 @@ def _rate_limited(cause: str | None) -> AppError:
             ErrorMessages.RATE_LIMITED,
             cause,
         )
-    # TODO: Mark as Network error for now. Surface when backend can handle timeouts as transient
     return AppError(
         TransientError.NETWORK_ERROR,
         ErrorKind.TRANSIENT,
@@ -132,7 +127,7 @@ def _rate_limited(cause: str | None) -> AppError:
     )
 
 
-def _bad_request(msg: str) -> AppError:
+def _as_bad_request(msg: str) -> AppError:
     if _is_context_len(msg):
         return AppError(
             TerminalError.CONTEXT_TOO_LONG,
@@ -158,7 +153,7 @@ def _bad_request(msg: str) -> AppError:
     )
 
 
-def _api_5xx(msg: str) -> AppError:
+def _as_api_5xx(msg: str) -> AppError:
     return AppError(
         TransientError.PROVIDER_5XX,
         ErrorKind.TRANSIENT,
@@ -168,7 +163,7 @@ def _api_5xx(msg: str) -> AppError:
     )
 
 
-def _timeout(msg: str) -> AppError:
+def _as_timeout(msg: str) -> AppError:
     return AppError(
         TransientError.PROVIDER_TIMEOUT,
         ErrorKind.TRANSIENT,
@@ -178,7 +173,7 @@ def _timeout(msg: str) -> AppError:
     )
 
 
-def _network(msg: str) -> AppError:
+def _as_network(msg: str) -> AppError:
     return AppError(
         TransientError.NETWORK_ERROR,
         ErrorKind.TRANSIENT,
@@ -188,14 +183,43 @@ def _network(msg: str) -> AppError:
     )
 
 
-# ------------ Public classifier ------------
+def _from_status_code(sc: int, msg: str) -> AppError | None:
+    """Map an HTTP status code to a canonical AppError (or None if not mapped)."""
+    if sc in (401, 403):
+        return AppError(
+            TerminalError.AUTH_FAILED,
+            ErrorKind.TERMINAL,
+            grpc.StatusCode.UNAUTHENTICATED,
+            ErrorMessages.AUTH_FAILED,
+            msg,
+        )
+    if sc == 404:
+        return AppError(
+            TerminalError.UNSUPPORTED_MODEL,
+            ErrorKind.TERMINAL,
+            grpc.StatusCode.INVALID_ARGUMENT,
+            ErrorMessages.UNSUPPORTED_MODEL,
+            msg,
+        )
+    if sc == 429:
+        return _as_rate_limited(msg)
+    if sc == 400:
+        return _as_bad_request(msg)
+    if 500 <= sc <= 599:
+        return _as_api_5xx(msg)
+    return None
+
+
+# 5) Public classifier
 def classify_exception(e: Exception) -> AppError:
     """
     Normalize arbitrary exceptions into AppError with stable code/kind/grpc_status.
+
     Returns:
-        AppError: One of Terminal/Transient variants defined in `gateway.util.errors`.
+        AppError
     """
-    # 0) Instructor / Pydantic
+
+    # A) Instructor / Pydantic schema mismatch -> transient
     if isinstance(e, ValidationError):
         return AppError(
             TransientError.SCHEMA_MISMATCH,
@@ -205,37 +229,25 @@ def classify_exception(e: Exception) -> AppError:
             str(e),
         )
 
-    # 1) Status-code–first (robust to SDK churn and httpx wrappers)
+    # B) Status-code–first (works across httpx/OpenAI/Anthropic wrappers)
     sc = _status_code_of(e)
     if sc is not None:
-        msg = str(e)
-        if sc in (401, 403):
-            return AppError(
-                TerminalError.AUTH_FAILED,
-                ErrorKind.TERMINAL,
-                grpc.StatusCode.UNAUTHENTICATED,
-                ErrorMessages.AUTH_FAILED,
-                msg,
-            )
-        if sc == 404:
-            return AppError(
-                TerminalError.UNSUPPORTED_MODEL,
-                ErrorKind.TERMINAL,
-                grpc.StatusCode.INVALID_ARGUMENT,
-                ErrorMessages.UNSUPPORTED_MODEL,
-                msg,
-            )
-        if sc == 429:
-            return _rate_limited(msg)
-        if sc == 400:
-            return _bad_request(msg)
-        if 500 <= sc <= 599:
-            return _api_5xx(msg)
+        mapped = _from_status_code(sc, str(e))
+        if mapped:
+            return mapped
 
-    # 2) SDK-specific classes (OR-groups; concise)
-    if (OpenAIAuthError and isinstance(e, OpenAIAuthError)) or (
-        AnthropicAuthError and isinstance(e, AnthropicAuthError)
-    ):
+    # C) SDK-specific exception classes
+    #    Build tuples only for classes that are actually available at runtime.
+    auth_excs = tuple(filter(None, (OpenAIAuthError, AnthropicAuthError))) or None
+    not_found_excs = tuple(filter(None, (OpenAINotFoundError, AnthropicNotFoundError))) or None
+    rate_limit_excs = tuple(filter(None, (OpenAIRateLimitError, AnthropicRateLimitError))) or None
+    bad_request_excs = (
+        tuple(filter(None, (OpenAIBadRequestError, AnthropicBadRequestError))) or None
+    )
+    api_error_excs = tuple(filter(None, (OpenAIApiError, AnthropicApiError))) or None
+    timeout_excs = tuple(filter(None, (OpenAITimeoutError, AnthropicAPITimeoutError))) or None
+
+    if _match_any_instance(e, auth_excs):
         return AppError(
             TerminalError.AUTH_FAILED,
             ErrorKind.TERMINAL,
@@ -243,9 +255,7 @@ def classify_exception(e: Exception) -> AppError:
             ErrorMessages.AUTH_FAILED,
             str(e),
         )
-    if (OpenAINotFoundError and isinstance(e, OpenAINotFoundError)) or (
-        AnthropicNotFoundError and isinstance(e, AnthropicNotFoundError)
-    ):
+    if _match_any_instance(e, not_found_excs):
         return AppError(
             TerminalError.UNSUPPORTED_MODEL,
             ErrorKind.TERMINAL,
@@ -253,43 +263,30 @@ def classify_exception(e: Exception) -> AppError:
             ErrorMessages.UNSUPPORTED_MODEL,
             str(e),
         )
-    if (OpenAIRateLimitError and isinstance(e, OpenAIRateLimitError)) or (
-        AnthropicRateLimitError and isinstance(e, AnthropicRateLimitError)
-    ):
-        return _rate_limited(str(e))
-    if (OpenAIBadRequestError and isinstance(e, OpenAIBadRequestError)) or (
-        AnthropicBadRequestError and isinstance(e, AnthropicBadRequestError)
-    ):
-        return _bad_request(str(e))
-    if (OpenAIApiError and isinstance(e, OpenAIApiError)) or (
-        AnthropicApiError and isinstance(e, AnthropicApiError)
-    ):
-        # if SDK exposes non-5xx here, status-code path would have handled; treat as 5xx-ish
-        return _api_5xx(str(e))
-    if (OpenAITimeoutError and isinstance(e, OpenAITimeoutError)) or (
-        AnthropicAPITimeoutError and isinstance(e, AnthropicAPITimeoutError)
-    ):
-        return _timeout(str(e))
+    if _match_any_instance(e, rate_limit_excs):
+        return _as_rate_limited(str(e))
+    if _match_any_instance(e, bad_request_excs):
+        return _as_bad_request(str(e))
+    if _match_any_instance(e, api_error_excs):
+        # If SDK exposes non-5xx here, status-code path above would already have mapped it.
+        return _as_api_5xx(str(e))
+    if _match_any_instance(e, timeout_excs):
+        return _as_timeout(str(e))
 
-    # 3) Generic timeouts / network / httpx
+    # D) Generic timeouts / network / httpx family
     if isinstance(e, (asyncio.TimeoutError, TimeoutError)):
-        return _timeout(str(e))
+        return _as_timeout(str(e))
     if isinstance(e, (socket.gaierror, ConnectionError, OSError)):
-        return _network(str(e))
+        return _as_network(str(e))
+
     if httpx:
+        # D.1) timeouts
+        if isinstance(e, (httpx.ReadTimeout, httpx.ConnectTimeout, httpx.PoolTimeout, httpx.TimeoutException)):  # type: ignore[attr-defined]
+            return _as_timeout(str(e))
+        # D.2) network-ish
         if isinstance(
             e,
-            (
-                httpx.ReadTimeout,
-                httpx.ConnectTimeout,
-                httpx.PoolTimeout,
-                httpx.TimeoutException,
-            ),
-        ):
-            return _timeout(str(e))
-        if isinstance(
-            e,
-            (
+            (  # type: ignore[attr-defined]
                 httpx.ConnectError,
                 httpx.NetworkError,
                 httpx.ReadError,
@@ -297,11 +294,14 @@ def classify_exception(e: Exception) -> AppError:
                 httpx.WriteError,
             ),
         ):
-            return _network(str(e))
-        if isinstance(e, httpx.HTTPStatusError):
-            return classify_exception(e)
+            return _as_network(str(e))
+        # D.3) explicit HTTP status error (NO RECURSION)
+        if isinstance(e, httpx.HTTPStatusError):  # type: ignore[attr-defined]
+            sc2 = _status_code_of(e)
+            mapped = _from_status_code(sc2, str(e)) if sc2 is not None else None
+            return mapped or _as_network(str(e))
 
-    # 4) Fallback
+    # E) Fallback: unexpected terminal error
     return AppError(
         TerminalError.UNEXPECTED_ERROR,
         ErrorKind.TERMINAL,

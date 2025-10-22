@@ -1,6 +1,6 @@
 # tests/test_server_bind_insecure.py
 import grpc
-from server import bind_port
+from server import _bind_port
 
 
 class DummyLogger:
@@ -22,6 +22,6 @@ def test_bind_insecure_path(monkeypatch):
     # no cert env required
     logger = DummyLogger()
     server = grpc.aio.server()
-    bind_port(server, logger)
+    _bind_port(server, logger)
     # should have logged TLS disabled
     assert any("TLS disabled" in msg[0] for lvl, msg in logger.logs if lvl == "info")

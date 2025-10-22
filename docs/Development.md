@@ -53,6 +53,17 @@ Server listens on `HOST:PORT` (defaults `0.0.0.0:50051`). When TLS is enabled yo
 
 ## Style
 
-- Keep docstrings concise and actionable. First line imperative; explain *why*, not only *what*.
 - Avoid logging prompts or completions at INFO.
 - Prefer small pure functions; surface errors via `AppError` not raw exceptions.
+- Keep docstrings `Google-Style Python Docstrings` concise and actionable. First line imperative; explain *why*, not only *what*.
+- Each file should have a top level docstring eg:
+- ```python
+    """
+    file: gateway/.../<filename>.py
+  
+    Top Level Comments about the file. Break Line and begin imports.
+    """
+  
+    import "statement"
+    ```
+

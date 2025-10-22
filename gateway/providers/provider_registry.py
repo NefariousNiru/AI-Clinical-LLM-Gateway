@@ -1,5 +1,6 @@
-# gateway/providers/provider_registry.py
 """
+file: gateway/providers/provider_registry.py
+
 Provider registry for constructing typed SDK clients (OpenAI, Anthropic, Ollama) or DummyProvider.
 
 Supported names (case-insensitive): {"openai","anthropic","ollama","dummy"}.
@@ -7,6 +8,7 @@ Returns concrete async SDK clients (AsyncOpenAI, AsyncAnthropic) or DummyProvide
 Raises:
     ValueError: if the provider name is not registered.
 """
+
 from typing import Union
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI

@@ -1,4 +1,17 @@
-# gateway/auth_token_interceptor.py
+"""
+file: gateway/auth_token_interceptor.py
+
+gRPC aio server interceptor that enforces a shared bearer token via request metadata.
+
+- Reads the token from `settings.shared_token_key` (e.g., "x-gateway-token").
+- On mismatch/missing, sets the trailer `settings.error_metadata_key` to "auth_failed"
+  and aborts with UNAUTHENTICATED + a stable, user-safe message.
+
+Notes:
+- Uses constant-time comparison to avoid timing side channels.
+- Works for all RPC shapes (unary-unary, unary-stream, stream-unary, stream-stream).
+"""
+
 import grpc
 from gateway.config.settings import settings
 from gateway.util.errors import ErrorMessages, TerminalError
@@ -8,16 +21,17 @@ class AuthTokenInterceptor(grpc.aio.ServerInterceptor):
     """
     Server-side interceptor enforcing a shared token via gRPC metadata.
 
-    Expects:
-        - Metadata key: settings.shared_token_key (e.g., "x-gateway-token")
-        - Value: exact match with `expected_token`
+    Attributes:
+        expected_token (str): shared secret that must match the incoming metadata value.
 
-    On mismatch:
-        - Sets trailing metadata (settings.error_metadata_key, "auth_failed")
-        - Aborts with StatusCode.UNAUTHENTICATED and ErrorMessages.AUTH_FAILED
+    Behavior:
+        - Extracts metadata `settings.shared_token_key` (case-insensitive by gRPC spec).
+        - If absent or mismatched, attaches trailer `(settings.error_metadata_key, "auth_failed")`
+          and aborts with UNAUTHENTICATED and `ErrorMessages.AUTH_FAILED`.
     """
 
     def __init__(self, expected_token: str | None):
+        # 1) Validate the configured token early with a friendly runtime error
         if not expected_token.strip():
             raise RuntimeError(ErrorMessages.SET_SHARED_TOKEN)
         self.expected_token = expected_token
