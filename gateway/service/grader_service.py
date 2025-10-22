@@ -1,11 +1,13 @@
-# gateway/service/grader_service.py
-"""Core grading service invoked by GRPC Grade method.
+"""
+file: gateway/service/grader_service.py
+Core grading service invoked by GRPC Grade method.
 
 Responsibilities:
 - Call the underlying ChatProvider (model provider)
 - Delegate Grading to Provider
 - Handle top level errors and return appropriate responses.
 """
+
 import logging
 import time
 import grpc
@@ -25,11 +27,14 @@ async def abort_with_error(
     code: str,
     details: str,
 ) -> None:
-    """Abort the RPC with a status and attach a machine-readable error code.
-
-    The `x-error-code` trailer enables downstream components to classify errors
-    without string-parsing the gRPC details.
     """
+    Abort the RPC with a status and attach a machine-readable error code.
+
+    Notes:
+        The `x-error-code` trailer enables downstream components to classify errors
+        without string-parsing the gRPC details.
+    """
+
     context.set_trailing_metadata(((settings.error_metadata_key, code),))
     await context.abort(status, details)
 
@@ -73,6 +78,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
 
     @staticmethod
     async def _validate_prompts(request, context):
+        # 1) Required System Prompt
         if not request.system_prompt.strip():
             await abort_with_error(
                 context,
@@ -80,6 +86,8 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 TerminalError.INVALID_SYSTEM_PROMPT,
                 ErrorMessages.INVALID_SYSTEM_PROMPT,
             )
+
+        # 2) Required User Prompt
         if not request.user_prompt.strip():
             await abort_with_error(
                 context,
@@ -91,6 +99,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
     @staticmethod
     async def _get_chat_service(request, context) -> ChatService | None:
         """Return a chat service based on argument based request.model_provider"""
+
         try:
             return ChatService(raw_client=get_provider(request.model_provider))
 
@@ -98,7 +107,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             await abort_with_error(
                 context,
                 grpc.StatusCode.INVALID_ARGUMENT,
-                TerminalError.UNSUPPORTED_MODEL,
+                TerminalError.UNSUPPORTED_PROVIDER,
                 f"{ErrorMessages.UNSUPPORTED_PROVIDER}: {e!s}",
             )
 
@@ -107,6 +116,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         chat_service: ChatService, request, context
     ) -> ProblemFeedback | None:
         """Helper to delegate, deal with errors and send back response for grading"""
+
         # 1) Log start
         logger.info(
             "Grade request: provider=%s model=%s trace_id=%s job_id=%s",
@@ -174,6 +184,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         section: FeedbackSection,
     ) -> grader_pb2.FeedbackSection:
         """Adapters for pydantic to proto feedback sections."""
+
         return grader_pb2.FeedbackSection(
             score=section.score,
             evaluation=section.evaluation,
@@ -184,6 +195,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
         self, feedback: ProblemFeedback
     ) -> grader_pb2.ProblemFeedback:
         """Adapters for pydantic to proto problem feedback."""
+
         return grader_pb2.ProblemFeedback(
             name=feedback.name,
             is_priority=feedback.is_priority,

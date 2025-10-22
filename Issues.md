@@ -7,11 +7,6 @@
    - Impact: same object → same branch → infinite recursion → stack overflow.
    - Fix: inspect `e.response.status_code` directly and route to status-code handler without re-calling `classify_exception`; or extract message and call `_bad_request/_api_5xx` accordingly.
 
-2) **Error code mismatch in `_get_chat_service` for unsupported provider**
-   - File: `gateway/service/grader_service.py`
-   - Behavior: `except ValueError` returns code `unsupported_model` but the error is provider-related.
-   - Fix: use `TerminalError.UNSUPPORTED_PROVIDER` to avoid confusing clients.
-
 ## P2. Design / Modularity
 
 1) **Provider abstraction leakage in `ChatService`**
