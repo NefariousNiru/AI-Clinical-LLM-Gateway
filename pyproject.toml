@@ -17,13 +17,13 @@ openai = "^1.102.0"
 ollama = "^0.5.3"
 instructor = "^1.11.3"
 anthropic = "^0.68.0"
+grpcio-tools = "^1.74.0"
 
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.0"
 black = "^25.1.0"
 pytest = "^8.4.2"
-grpcio-tools = "^1.74.0"
 pytest-asyncio = "^1.2.0"
 pytest-mock = "^3.15.1"
 
