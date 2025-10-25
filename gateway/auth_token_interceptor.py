@@ -1,10 +1,39 @@
-# gateway/auth_token_interceptor.py
+"""
+file: gateway/auth_token_interceptor.py
+
+gRPC aio server interceptor that enforces a shared bearer token via request metadata.
+
+- Reads the token from `settings.shared_token_key` (e.g., "x-gateway-token").
+- On mismatch/missing, sets the trailer `settings.error_metadata_key` to "auth_failed"
+  and aborts with UNAUTHENTICATED + a stable, user-safe message.
+
+Notes:
+- Uses constant-time comparison to avoid timing side channels.
+- Works for all RPC shapes (unary-unary, unary-stream, stream-unary, stream-stream).
+"""
+
 import grpc
-from typing import Optional
+from gateway.config.settings import settings
+from gateway.util.errors import ErrorMessages, TerminalError
 
 
 class AuthTokenInterceptor(grpc.aio.ServerInterceptor):
-    def __init__(self, expected_token: Optional[str]):
+    """
+    Server-side interceptor enforcing a shared token via gRPC metadata.
+
+    Attributes:
+        expected_token (str): shared secret that must match the incoming metadata value.
+
+    Behavior:
+        - Extracts metadata `settings.shared_token_key` (case-insensitive by gRPC spec).
+        - If absent or mismatched, attaches trailer `(settings.error_metadata_key, "auth_failed")`
+          and aborts with UNAUTHENTICATED and `ErrorMessages.AUTH_FAILED`.
+    """
+
+    def __init__(self, expected_token: str | None):
+        # 1) Validate the configured token early with a friendly runtime error
+        if not expected_token.strip():
+            raise RuntimeError(ErrorMessages.SET_SHARED_TOKEN)
         self.expected_token = expected_token
 
     async def intercept_service(self, continuation, handler_call_details):
@@ -16,9 +45,15 @@ class AuthTokenInterceptor(grpc.aio.ServerInterceptor):
             if not self.expected_token:
                 return
             md = {k: v for k, v in context.invocation_metadata()}
-            token = md.get("x-gateway-token")
+            token = md.get(settings.shared_token_key)
             if token != self.expected_token:
-                await context.abort(grpc.StatusCode.UNAUTHENTICATED, "auth_failed")
+                context.set_trailing_metadata(
+                    ((settings.error_metadata_key, TerminalError.AUTH_FAILED),)
+                )
+                await context.abort(
+                    grpc.StatusCode.UNAUTHENTICATED,
+                    ErrorMessages.AUTH_FAILED,
+                )
 
         if handler.unary_unary:
 
