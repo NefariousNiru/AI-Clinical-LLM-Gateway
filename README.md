@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![gRPC](https://img.shields.io/badge/gRPC-async--server-009688?logo=google-cloud&logoColor=white)](https://grpc.io/)
-[![Tests](https://github.com/NefariousNiru/AI-Clinical-LLM-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/NefariousNiru/AI-Clinical-LLM-Gateway/actions)
+[![CI](https://github.com/NefariousNiru/AI-Clinical-LLM-Gateway/actions/workflows/CI.yml/badge.svg)](https://github.com/NefariousNiru/AI-Clinical-LLM-Gateway/actions/workflows/CI.yml)
 [![Lint](https://img.shields.io/badge/Lint-Ruff-black?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![Formatter](https://img.shields.io/badge/Formatter-Black-000000?logo=python&logoColor=white)](https://github.com/psf/black)
 [![Tests-Pytest](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
