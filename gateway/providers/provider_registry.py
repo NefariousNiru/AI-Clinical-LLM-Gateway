@@ -34,9 +34,13 @@ def get_provider(name: str) -> Provider:
     Returns:
         Provider: AsyncOpenAI, AsyncAnthropic, or DummyProvider.
     Raises:
-        ValueError: If `name` is not registered.
+        ValueError: If `name` is not registered or api key is not present
     """
+
     try:
-        return PROVIDER_REGISTER[name.lower()]()
+        provider = PROVIDER_REGISTER[name.lower()]()
+        if not provider.api_key or not provider.api_key.strip():
+            raise KeyError
+        return provider
     except KeyError:
         raise ValueError(f"{name}")
