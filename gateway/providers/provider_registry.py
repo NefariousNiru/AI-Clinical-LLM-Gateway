@@ -39,7 +39,9 @@ def get_provider(name: str) -> Provider:
 
     try:
         provider = PROVIDER_REGISTER[name.lower()]()
-        if not provider.api_key or not provider.api_key.strip():
+        if not isinstance(provider, DummyProvider) and (
+            not provider.api_key or not provider.api_key.strip()
+        ):
             raise KeyError
         return provider
     except KeyError:
