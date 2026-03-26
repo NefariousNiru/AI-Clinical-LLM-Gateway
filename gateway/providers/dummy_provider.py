@@ -39,8 +39,8 @@ class DummyProvider:
     @classmethod
     def _extract_student_submission(cls, user_prompt: str) -> dict[str, Any]:
         """
-        Parse the student submission payload from a prompt shaped like:
-            student_submission:{...json...}
+        Parse the first JSON object after `student_submission:` by taking
+        everything from the first `{` to the last `}`.
         """
 
         prefix = "student_submission:"
@@ -49,8 +49,16 @@ class DummyProvider:
 
         payload_str = user_prompt.split(prefix, 1)[1].strip()
 
+        start = payload_str.find("{")
+        end = payload_str.rfind("}")
+
+        if start == -1 or end == -1 or end < start:
+            return {}
+
+        json_str = payload_str[start : end + 1]
+
         try:
-            parsed = json.loads(payload_str)
+            parsed = json.loads(json_str)
             return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
@@ -84,7 +92,9 @@ class DummyProvider:
         await asyncio.sleep(120)        # Simulate LLM latency
 
         submission = cls._extract_student_submission(user_prompt)
-        problem_name = submission.get("name", "unknown_problem_up")
+        if "name" not in submission:
+            raise ValueError("Missing 'name' in submission")
+        problem_name = submission["name"]
         is_priority = bool(submission.get("isPriority", False))
 
         long_evaluation = cls._make_lorem_text()
