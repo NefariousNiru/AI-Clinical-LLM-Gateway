@@ -89,7 +89,7 @@ class DummyProvider:
         - returns large text in each feedback box
         """
 
-        await asyncio.sleep(60)        # Simulate LLM latency
+        await asyncio.sleep(1)  # Simulate LLM latency
 
         submission = cls._extract_student_submission(user_prompt)
         if "name" not in submission:
