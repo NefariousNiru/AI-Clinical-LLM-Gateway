@@ -14,6 +14,6 @@ async def test_chat_service_with_dummy_provider_returns_structured_envelope():
         trace_id="t-1",
         job_id="j-1",
     )
-    assert resp.envelope.feedback.name == "Hypertension Management"
+    assert resp.envelope.feedback.name == "unknown_problem_up"
     assert isinstance(resp.input_tokens, int)
     assert isinstance(resp.output_tokens, int)

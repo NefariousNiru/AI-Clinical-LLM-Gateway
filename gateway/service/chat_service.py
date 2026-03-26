@@ -83,7 +83,7 @@ class ChatService:
 
         # 2) Short-circuit for the Dummy provider (no network I/O)
         if isinstance(self.raw_client, DummyProvider):
-            return self.raw_client.get_dummy_response()
+            return await self.raw_client.get_dummy_response(user_prompt=user_prompt)
 
         try:
             # 3) Call provider via Instructor to get a typed response
