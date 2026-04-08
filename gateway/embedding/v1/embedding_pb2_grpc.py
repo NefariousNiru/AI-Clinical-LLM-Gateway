@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import gateway.grader.v1.grader_pb2 as grader__pb2
+import gateway.embedding.v1.embedding_pb2 as embedding__pb2
 
 GRPC_GENERATED_VERSION = "1.76.0"
 GRPC_VERSION = grpc.__version__
@@ -18,20 +18,16 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f"The grpc package installed is at version {GRPC_VERSION},"
-        + " but the generated code in grader_pb2_grpc.py depends on"
+        + " but the generated code in embedding_pb2_grpc.py depends on"
         + f" grpcio>={GRPC_GENERATED_VERSION}."
         + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
         + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
     )
 
 
-class GraderStub(object):
-    """Errors travel via gRPC status, with gateway placing a string code in metadata.
-    Transient: "network_error", "provider_timeout", "rate_limited", "schema_mismatch"
-    Terminal:  "invalid_rubric", "unsupported_model", "auth_failed", "invalid_payload"
-
-    -----------------------------------------------------------------------------
-    Grading service.
+class EmbedderStub(object):
+    """-----------------------------------------------------------------------------
+    Embedding service.
     -----------------------------------------------------------------------------
     """
 
@@ -41,59 +37,51 @@ class GraderStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Grade = channel.unary_unary(
-            "/llm_gateway.grader.v1.Grader/Grade",
-            request_serializer=grader__pb2.GradeRequest.SerializeToString,
-            response_deserializer=grader__pb2.GradeResponse.FromString,
+        self.EmbedBatch = channel.unary_unary(
+            "/llm_gateway.embedding.v1.Embedder/EmbedBatch",
+            request_serializer=embedding__pb2.EmbedBatchRequest.SerializeToString,
+            response_deserializer=embedding__pb2.EmbedBatchResponse.FromString,
             _registered_method=True,
         )
 
 
-class GraderServicer(object):
-    """Errors travel via gRPC status, with gateway placing a string code in metadata.
-    Transient: "network_error", "provider_timeout", "rate_limited", "schema_mismatch"
-    Terminal:  "invalid_rubric", "unsupported_model", "auth_failed", "invalid_payload"
-
-    -----------------------------------------------------------------------------
-    Grading service.
+class EmbedderServicer(object):
+    """-----------------------------------------------------------------------------
+    Embedding service.
     -----------------------------------------------------------------------------
     """
 
-    def Grade(self, request, context):
+    def EmbedBatch(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
 
-def add_GraderServicer_to_server(servicer, server):
+def add_EmbedderServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "Grade": grpc.unary_unary_rpc_method_handler(
-            servicer.Grade,
-            request_deserializer=grader__pb2.GradeRequest.FromString,
-            response_serializer=grader__pb2.GradeResponse.SerializeToString,
+        "EmbedBatch": grpc.unary_unary_rpc_method_handler(
+            servicer.EmbedBatch,
+            request_deserializer=embedding__pb2.EmbedBatchRequest.FromString,
+            response_serializer=embedding__pb2.EmbedBatchResponse.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "llm_gateway.grader.v1.Grader", rpc_method_handlers
+        "llm_gateway.embedding.v1.Embedder", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers("llm_gateway.grader.v1.Grader", rpc_method_handlers)
+    server.add_registered_method_handlers("llm_gateway.embedding.v1.Embedder", rpc_method_handlers)
 
 
 # This class is part of an EXPERIMENTAL API.
-class Grader(object):
-    """Errors travel via gRPC status, with gateway placing a string code in metadata.
-    Transient: "network_error", "provider_timeout", "rate_limited", "schema_mismatch"
-    Terminal:  "invalid_rubric", "unsupported_model", "auth_failed", "invalid_payload"
-
-    -----------------------------------------------------------------------------
-    Grading service.
+class Embedder(object):
+    """-----------------------------------------------------------------------------
+    Embedding service.
     -----------------------------------------------------------------------------
     """
 
     @staticmethod
-    def Grade(
+    def EmbedBatch(
         request,
         target,
         options=(),
@@ -108,9 +96,9 @@ class Grader(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/llm_gateway.grader.v1.Grader/Grade",
-            grader__pb2.GradeRequest.SerializeToString,
-            grader__pb2.GradeResponse.FromString,
+            "/llm_gateway.embedding.v1.Embedder/EmbedBatch",
+            embedding__pb2.EmbedBatchRequest.SerializeToString,
+            embedding__pb2.EmbedBatchResponse.FromString,
             options,
             channel_credentials,
             insecure,

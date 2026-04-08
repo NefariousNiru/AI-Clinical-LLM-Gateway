@@ -12,31 +12,13 @@ import logging
 import time
 import grpc
 from gateway.config.pydantic_models import ChatServiceResponse, ProblemFeedback, FeedbackSection
-from gateway.config.settings import settings
 from gateway.grader.v1 import grader_pb2, grader_pb2_grpc
 from gateway.providers.provider_registry import get_provider
 from gateway.service.chat_service import ChatService
 from gateway.util.errors import AppError, ErrorMessages, TerminalError, TransientError
+from gateway.util import functions
 
 logger = logging.getLogger(__name__)
-
-
-async def abort_with_error(
-    context: grpc.aio.ServicerContext,
-    status: grpc.StatusCode,
-    code: str,
-    details: str,
-) -> None:
-    """
-    Abort the RPC with a status and attach a machine-readable error code.
-
-    Notes:
-        The `x-error-code` trailer enables downstream components to classify errors
-        without string-parsing the gRPC details.
-    """
-
-    context.set_trailing_metadata(((settings.error_metadata_key, code),))
-    await context.abort(status, details)
 
 
 class GraderService(grader_pb2_grpc.GraderServicer):
@@ -80,7 +62,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
     async def _validate_prompts(request, context):
         # 1) Required System Prompt
         if not request.system_prompt.strip():
-            await abort_with_error(
+            await functions.abort_with_error(
                 context,
                 grpc.StatusCode.INVALID_ARGUMENT,
                 TerminalError.INVALID_SYSTEM_PROMPT,
@@ -89,7 +71,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
 
         # 2) Required User Prompt
         if not request.user_prompt.strip():
-            await abort_with_error(
+            await functions.abort_with_error(
                 context,
                 grpc.StatusCode.INVALID_ARGUMENT,
                 TerminalError.INVALID_USER_PROMPT,
@@ -104,7 +86,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             return ChatService(raw_client=get_provider(request.model_provider))
 
         except ValueError as e:
-            await abort_with_error(
+            await functions.abort_with_error(
                 context,
                 grpc.StatusCode.INVALID_ARGUMENT,
                 TerminalError.UNSUPPORTED_PROVIDER,
@@ -164,7 +146,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 request.job_id,
                 ae.details,
             )
-            await abort_with_error(context, ae.grpc_status, ae.code, ae.details)
+            await functions.abort_with_error(context, ae.grpc_status, ae.code, ae.details)
 
         except Exception as e:
             logger.exception(
@@ -172,7 +154,7 @@ class GraderService(grader_pb2_grpc.GraderServicer):
                 request.trace_id,
                 request.job_id,
             )
-            await abort_with_error(
+            await functions.abort_with_error(
                 context,
                 grpc.StatusCode.UNAVAILABLE,
                 TransientError.NETWORK_ERROR,

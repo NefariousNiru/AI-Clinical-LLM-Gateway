@@ -1,13 +1,12 @@
-from collections.abc import Mapping as _Mapping
-from typing import ClassVar as _ClassVar
-
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
+from collections.abc import Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class FeedbackSection(_message.Message):
-    __slots__ = ("evaluation", "feedback", "score")
+    __slots__ = ("score", "evaluation", "feedback")
     SCORE_FIELD_NUMBER: _ClassVar[int]
     EVALUATION_FIELD_NUMBER: _ClassVar[int]
     FEEDBACK_FIELD_NUMBER: _ClassVar[int]
@@ -16,19 +15,19 @@ class FeedbackSection(_message.Message):
     feedback: str
     def __init__(
         self,
-        score: str | None = ...,
-        evaluation: str | None = ...,
-        feedback: str | None = ...,
+        score: _Optional[str] = ...,
+        evaluation: _Optional[str] = ...,
+        feedback: _Optional[str] = ...,
     ) -> None: ...
 
 class ProblemFeedback(_message.Message):
     __slots__ = (
-        "explanation",
-        "identification",
-        "is_priority",
-        "monitoring",
         "name",
+        "is_priority",
+        "identification",
+        "explanation",
         "plan_recommendation",
+        "monitoring",
     )
     NAME_FIELD_NUMBER: _ClassVar[int]
     IS_PRIORITY_FIELD_NUMBER: _ClassVar[int]
@@ -44,22 +43,22 @@ class ProblemFeedback(_message.Message):
     monitoring: FeedbackSection
     def __init__(
         self,
-        name: str | None = ...,
+        name: _Optional[str] = ...,
         is_priority: bool = ...,
-        identification: FeedbackSection | _Mapping | None = ...,
-        explanation: FeedbackSection | _Mapping | None = ...,
-        plan_recommendation: FeedbackSection | _Mapping | None = ...,
-        monitoring: FeedbackSection | _Mapping | None = ...,
+        identification: _Optional[_Union[FeedbackSection, _Mapping]] = ...,
+        explanation: _Optional[_Union[FeedbackSection, _Mapping]] = ...,
+        plan_recommendation: _Optional[_Union[FeedbackSection, _Mapping]] = ...,
+        monitoring: _Optional[_Union[FeedbackSection, _Mapping]] = ...,
     ) -> None: ...
 
 class GradeRequest(_message.Message):
     __slots__ = (
-        "job_id",
-        "model_name",
-        "model_provider",
         "system_prompt",
-        "trace_id",
         "user_prompt",
+        "model_provider",
+        "model_name",
+        "trace_id",
+        "job_id",
     )
     SYSTEM_PROMPT_FIELD_NUMBER: _ClassVar[int]
     USER_PROMPT_FIELD_NUMBER: _ClassVar[int]
@@ -75,16 +74,16 @@ class GradeRequest(_message.Message):
     job_id: str
     def __init__(
         self,
-        system_prompt: str | None = ...,
-        user_prompt: str | None = ...,
-        model_provider: str | None = ...,
-        model_name: str | None = ...,
-        trace_id: str | None = ...,
-        job_id: str | None = ...,
+        system_prompt: _Optional[str] = ...,
+        user_prompt: _Optional[str] = ...,
+        model_provider: _Optional[str] = ...,
+        model_name: _Optional[str] = ...,
+        trace_id: _Optional[str] = ...,
+        job_id: _Optional[str] = ...,
     ) -> None: ...
 
 class GradeResponse(_message.Message):
     __slots__ = ("feedback",)
     FEEDBACK_FIELD_NUMBER: _ClassVar[int]
     feedback: ProblemFeedback
-    def __init__(self, feedback: ProblemFeedback | _Mapping | None = ...) -> None: ...
+    def __init__(self, feedback: _Optional[_Union[ProblemFeedback, _Mapping]] = ...) -> None: ...

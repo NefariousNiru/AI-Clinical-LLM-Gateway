@@ -1,7 +1,7 @@
 # tests/test_abort_with_error.py
 import pytest
 import grpc
-from gateway.service.grader_service import abort_with_error
+from gateway.util.functions import abort_with_error
 from gateway.config.settings import settings
 from gateway.util.errors import TerminalError, ErrorMessages
 from tests.conftest import FakeServicerContext

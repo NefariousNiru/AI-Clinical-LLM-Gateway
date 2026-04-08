@@ -1,15 +1,35 @@
 syntax = "proto3";
-package grader.v1;
-option csharp_namespace = "Grader.V1";
 
-// ---------- Feedback (response) ----------
+package llm_gateway.grader.v1;
+option csharp_namespace = "LlmGateway.Grader.V1";
 
+// ============================================================================
+// file: proto/grader.proto
+//
+// Grading RPC contract.
+//
+// Purpose:
+// - Accept a grading request from backend services.
+// - Return structured problem feedback.
+// - Keep the gateway contract provider-agnostic.
+//
+// Notes:
+// - Errors travel via gRPC status.
+// - A machine-readable error code is attached in trailing metadata.
+// ============================================================================
+
+// -----------------------------------------------------------------------------
+// Feedback section returned for one rubric area.
+// -----------------------------------------------------------------------------
 message FeedbackSection {
   string score = 1;
   string evaluation = 2;
   string feedback = 3;
 }
 
+// -----------------------------------------------------------------------------
+// Structured feedback returned for one problem.
+// -----------------------------------------------------------------------------
 message ProblemFeedback {
   string name = 1;
   bool is_priority = 2;
@@ -19,27 +39,34 @@ message ProblemFeedback {
   FeedbackSection monitoring = 6;
 }
 
-// ---------- RPC messages ----------
-
+// -----------------------------------------------------------------------------
+// Unary grading request.
+// -----------------------------------------------------------------------------
 message GradeRequest {
   string system_prompt = 1;
   string user_prompt = 2;
   string model_provider = 3;
   string model_name = 4;
 
-  // passthroughs
+  // Passthrough tracing metadata.
   string trace_id = 5;
   string job_id = 6;
 }
 
+// -----------------------------------------------------------------------------
+// Unary grading response.
+// -----------------------------------------------------------------------------
 message GradeResponse {
   ProblemFeedback feedback = 1;
 }
 
-// Errors travel via gRPC status, with gateway placing a string code in metadata:
-// Transient:  "network_error","provider_timeout","rate_limited","schema_mismatch"
-// Terminal:   "invalid_rubric","unsupported_model","auth_failed","invalid_payload"
+// Errors travel via gRPC status, with gateway placing a string code in metadata.
+// Transient: "network_error", "provider_timeout", "rate_limited", "schema_mismatch"
+// Terminal:  "invalid_rubric", "unsupported_model", "auth_failed", "invalid_payload"
 
+// -----------------------------------------------------------------------------
+// Grading service.
+// -----------------------------------------------------------------------------
 service Grader {
   rpc Grade(GradeRequest) returns (GradeResponse);
 }

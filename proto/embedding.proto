@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package llm_gateway.embedding.v1;
+option csharp_namespace = "LlmGateway.Embedding.V1";
+
+// ============================================================================
+// file: proto/embedding.proto
+//
+// Embedding RPC contract.
+//
+// Purpose:
+// - Accept batched embedding rows from backend services.
+// - Preserve row identity across the gateway boundary.
+// - Return embedded rows aligned to the original request rows.
+//
+// Notes:
+// - One row represents one normalized section-level item:
+//   (workup_id, submission_id, disease_id, section_type)
+// - Each row contains both the student answer text and the feedback text.
+// - The gateway will later call the provider embedding API in batch.
+// ============================================================================
+
+// -----------------------------------------------------------------------------
+// Request row sent by backend to gateway.
+// -----------------------------------------------------------------------------
+message EmbedRowRequest {
+  int64 workup_id = 1;
+  string submission_id = 2;
+  string disease_id = 3;
+  string section_type = 4;
+
+  string student_answer_text = 5;
+  string feedback_text = 6;
+}
+
+// -----------------------------------------------------------------------------
+// Response row returned by gateway to backend.
+// -----------------------------------------------------------------------------
+message EmbedRowResponse {
+  int64 workup_id = 1;
+  string submission_id = 2;
+  string disease_id = 3;
+  string section_type = 4;
+
+  string student_answer_text = 5;
+  repeated float student_answer_vector = 6;
+
+  string feedback_text = 7;
+  repeated float feedback_vector = 8;
+
+  string embedding_model = 9;
+}
+
+// -----------------------------------------------------------------------------
+// Batch embedding request.
+// -----------------------------------------------------------------------------
+message EmbedBatchRequest {
+  repeated EmbedRowRequest rows = 1;
+
+  string model_provider = 2;
+  string model_name = 3;
+
+  // Passthrough tracing metadata.
+  string trace_id = 4;
+  string job_id = 5;
+}
+
+// -----------------------------------------------------------------------------
+// Batch embedding response.
+// -----------------------------------------------------------------------------
+message EmbedBatchResponse {
+  repeated EmbedRowResponse rows = 1;
+}
+
+// -----------------------------------------------------------------------------
+// Embedding service.
+// -----------------------------------------------------------------------------
+service Embedder {
+  rpc EmbedBatch(EmbedBatchRequest) returns (EmbedBatchResponse);
+}

@@ -1,10 +1,31 @@
-PROTO=proto/grader.proto
+GRADER_PROTO=proto/grader.proto
+EMBEDDING_PROTO=proto/embedding.proto
 
-.PHONY: proto
-proto:
+GRADER_OUT=gateway/grader/v1
+EMBEDDING_OUT=gateway/embedding/v1
+
+.PHONY: proto proto-grader proto-embedding clean-proto
+
+proto: proto-grader proto-embedding
+
+proto-grader:
+	mkdir -p $(GRADER_OUT)
 	python -m grpc_tools.protoc \
 		-Iproto \
-		--python_out=gateway/grader/v1 \
-		--pyi_out=gateway/grader/v1 \
-		--grpc_python_out=gateway/grader/v1 \
-		$(PROTO)
+		--python_out=$(GRADER_OUT) \
+		--pyi_out=$(GRADER_OUT) \
+		--grpc_python_out=$(GRADER_OUT) \
+		$(GRADER_PROTO)
+
+proto-embedding:
+	mkdir -p $(EMBEDDING_OUT)
+	python -m grpc_tools.protoc \
+		-Iproto \
+		--python_out=$(EMBEDDING_OUT) \
+		--pyi_out=$(EMBEDDING_OUT) \
+		--grpc_python_out=$(EMBEDDING_OUT) \
+		$(EMBEDDING_PROTO)
+
+clean-proto:
+	rm -f $(GRADER_OUT)/*_pb2.py $(GRADER_OUT)/*_pb2.pyi $(GRADER_OUT)/*_pb2_grpc.py
+	rm -f $(EMBEDDING_OUT)/*_pb2.py $(EMBEDDING_OUT)/*_pb2.pyi $(EMBEDDING_OUT)/*_pb2_grpc.py
