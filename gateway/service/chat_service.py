@@ -4,9 +4,9 @@ file: gateway/service/chat_service.py
 Concrete chat service using Instructor for strict schema parsing.
 
 Responsibilities:
-- Call the model through Instructor with JSON → Pydantic enforcement.
-- Convert provider/instructor failures into AppError using classify_exception.
-- Avoid logging sensitive prompt/response contents at INFO level.
+    - Call the model through Instructor with JSON → Pydantic enforcement.
+    - Convert provider/instructor failures into AppError using classify_exception.
+    - Avoid logging sensitive prompt/response contents at INFO level.
 """
 
 import logging
@@ -22,7 +22,7 @@ from openai.types.chat import (
 from pydantic import ValidationError
 from gateway.config.models import (
     ChatServiceResponse,
-    FeedbackEnvelope,
+    EnvelopeT,
 )
 from gateway.config.settings import settings
 from gateway.providers.dummy_provider import DummyProvider
@@ -45,7 +45,7 @@ class ChatService:
         elif isinstance(raw_client, DummyProvider):
             self.client = raw_client
 
-    async def grade(
+    async def chat(
         self,
         *,
         system_prompt: str,
@@ -53,9 +53,10 @@ class ChatService:
         model_name: str,
         trace_id: str,
         job_id: str,
-    ) -> ChatServiceResponse:
+        envelope_model: type[EnvelopeT]
+    ) -> ChatServiceResponse[EnvelopeT]:
         """
-        Return structured feedback for input prompts.
+        Chat with LLM.
 
         Args:
             system_prompt (str): System message instructing model behavior.
@@ -63,6 +64,7 @@ class ChatService:
             model_name (str): Provider-specific model identifier.
             trace_id (str): Correlation id for observability.
             job_id (str): Backend job identifier for traceability.
+            envelope_model (type[EnvelopeT]): Envelope-specific model.
 
         Returns:
             ChatServiceResponse: typed envelope with token usage.
@@ -70,6 +72,11 @@ class ChatService:
         Raises:
             AppError: provider/SDK errors mapped to application domain.
             ValidationError: when model output fails schema validation.
+
+        Notes:
+            - EnvelopeT is used to make chat generic, and it must be passed by caller
+            - Example: FeedbackEnvelope.
+            - See: gateway.config.models
         """
 
         # 1) Trace (debug only: avoid prompt content in logs)
@@ -91,6 +98,7 @@ class ChatService:
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 model_name=model_name,
+                envelope_model=envelope_model,
             )
 
             # 4) Treat an envelope-marked error as transient (retryable upstream)
@@ -124,16 +132,19 @@ class ChatService:
             raise classify_exception(e)
 
     async def _get_response(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        model_name: str,
+        self, system_prompt: str, user_prompt: str, model_name: str, envelope_model: type[EnvelopeT]
     ) -> ChatServiceResponse:
-        """Call the chat model with Instructor enforcing FeedbackEnvelope.
+        """Call the chat model with Instructor enforcing EnvelopeT.
+
+        Args:
+            system_prompt (str): System message instructing model behavior.
+            user_prompt (str): User prompt message.
+            model_name (str): Provider-specific model identifier.
+            envelope_model (type[EnvelopeT]): Envelope-specific model.
 
         Notes:
             - Behaviour
-                - Uses Instructor to coerce the model output into `FeedbackEnvelope` (strict=True).
+                - Uses Instructor to coerce the model output into `EnvelopeT` (strict=True).
                 - Retries are governed by INSTRUCTOR_MAX_RETRY (from settings).
                 - Temperature is skipped for GPT-5* models, per provider constraints.
                 - Anthropic requires `max_tokens` and is passed via settings.
@@ -157,7 +168,7 @@ class ChatService:
 
         # 2) Base kwargs for chat.completions.create_with_completion
         kwargs = dict(
-            response_model=FeedbackEnvelope,
+            response_model=envelope_model,
             model=model_name,
             messages=[
                 ChatCompletionSystemMessageParam(role="system", content=system_prompt.strip()),
@@ -175,6 +186,13 @@ class ChatService:
         if isinstance(self.raw_client, AsyncAnthropic):
             # Anthropic Requires max_tokens
             kwargs["max_tokens"] = settings.anthropic_max_tokens
+
+        import json
+        response_model = kwargs["response_model"]
+        print("\nResponse model class:")
+        print(response_model)
+        print("\nResponse model JSON schema:")
+        print(json.dumps(response_model.model_json_schema(), indent=2, default=str))
 
         # 4) Invoke and receive (pydantic model, raw completion)
         envelope, completion = await self.client.chat.completions.create_with_completion(**kwargs)
