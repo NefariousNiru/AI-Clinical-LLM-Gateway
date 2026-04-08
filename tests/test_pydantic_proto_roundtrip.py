@@ -2,7 +2,7 @@
 
 from gateway.service.grader_service import GraderService
 from gateway.grader.v1 import grader_pb2
-from gateway.config.pydantic_models import (
+from gateway.config.models import (
     FeedbackSection as PydFeedbackSection,
     ProblemFeedback as PydProblemFeedback,
 )

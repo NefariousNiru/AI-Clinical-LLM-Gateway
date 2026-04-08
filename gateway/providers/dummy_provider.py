@@ -15,7 +15,7 @@ Maintenance:
 import asyncio
 import json
 from typing import Any
-from gateway.config.pydantic_models import (
+from gateway.config.models import (
     ChatServiceResponse,
     FeedbackEnvelope,
     FeedbackSection,

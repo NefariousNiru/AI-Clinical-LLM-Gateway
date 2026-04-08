@@ -1,7 +1,7 @@
 # tests/test_pydantic_constraints.py
 import pytest
 from pydantic import ValidationError
-from gateway.config.pydantic_models import FeedbackSection
+from gateway.config.models import FeedbackSection
 
 
 @pytest.mark.parametrize("field", ["score", "evaluation", "feedback"])

@@ -20,7 +20,7 @@ from openai.types.chat import (
     ChatCompletionUserMessageParam,
 )
 from pydantic import ValidationError
-from gateway.config.pydantic_models import (
+from gateway.config.models import (
     ChatServiceResponse,
     FeedbackEnvelope,
 )

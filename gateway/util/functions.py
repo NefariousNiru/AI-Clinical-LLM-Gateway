@@ -1,3 +1,9 @@
+"""
+file: gateway/util/functions.py
+
+Utility to store functions
+"""
+
 import grpc
 
 

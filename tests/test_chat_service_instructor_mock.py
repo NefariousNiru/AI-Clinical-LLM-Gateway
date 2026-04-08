@@ -7,7 +7,7 @@ from openai import AsyncOpenAI
 # Import both the class and the module so we can patch the type that ChatService checks
 from gateway.service import chat_service as chat_service_mod
 from gateway.service.chat_service import ChatService
-from gateway.config.pydantic_models import FeedbackEnvelope, ChatServiceResponse
+from gateway.config.models import FeedbackEnvelope, ChatServiceResponse
 
 
 class FakeAsyncInstructor:

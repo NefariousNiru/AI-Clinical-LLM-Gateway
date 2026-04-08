@@ -2,7 +2,7 @@
 import types
 import pytest
 
-from gateway.config.pydantic_models import (
+from gateway.config.models import (
     FeedbackSection as PydFeedbackSection,
     ProblemFeedback,
     FeedbackEnvelope,

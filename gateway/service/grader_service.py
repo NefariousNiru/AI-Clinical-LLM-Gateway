@@ -11,7 +11,7 @@ Responsibilities:
 import logging
 import time
 import grpc
-from gateway.config.pydantic_models import ChatServiceResponse, ProblemFeedback, FeedbackSection
+from gateway.config.models import ChatServiceResponse, ProblemFeedback, FeedbackSection
 from gateway.grader.v1 import grader_pb2, grader_pb2_grpc
 from gateway.providers.provider_registry import get_provider
 from gateway.service.chat_service import ChatService

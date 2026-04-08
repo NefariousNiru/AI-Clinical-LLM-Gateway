@@ -1,5 +1,5 @@
 """
-file: gateway/config/pydantic_models.py
+file: gateway/config/models.py
 
 Pydantic models used for typed LLM responses and envelopes.
 """

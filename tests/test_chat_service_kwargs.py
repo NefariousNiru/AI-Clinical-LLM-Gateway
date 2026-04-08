@@ -6,7 +6,7 @@ from anthropic import AsyncAnthropic
 from gateway.service import chat_service as chat_service_mod
 from gateway.service.chat_service import ChatService
 from gateway.config.settings import settings
-from gateway.config.pydantic_models import FeedbackEnvelope
+from gateway.config.models import FeedbackEnvelope
 
 
 class CapturingInstructor:
