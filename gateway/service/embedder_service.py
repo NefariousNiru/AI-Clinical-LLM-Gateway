@@ -57,6 +57,8 @@ class EmbedderService(embedding_pb2_grpc.EmbedderServicer):
     # Defaults
     EMBEDDING_PROVIDER = "openai"
     EMBEDDING_MODEL = "text-embedding-3-large"
+    EMBEDDING_DIMENSIONS = 1024
+    """**Do NOT change embedding dimension. It is tied to SQL Table**"""
 
     # Per-request embedding payload cap.
     MAX_REQUEST_INPUT_TOKENS = 299_000
@@ -451,6 +453,7 @@ class EmbedderService(embedding_pb2_grpc.EmbedderServicer):
                 return await client.embeddings.create(
                     model=self.EMBEDDING_MODEL,
                     input=list(texts),
+                    dimensions=self.EMBEDDING_DIMENSIONS
                 )
 
             except RateLimitError as e:
