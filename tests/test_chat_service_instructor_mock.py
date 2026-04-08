@@ -70,7 +70,7 @@ async def test_chat_service_openai_instructor(monkeypatch):
     monkeypatch.setattr(chat_service_mod, "AsyncInstructor", FakeAsyncInstructor)
 
     svc = ChatService(raw)
-    resp: ChatServiceResponse = await svc.grade(
+    resp: ChatServiceResponse = await svc.chat(
         system_prompt="s",
         user_prompt="u",
         model_name="gpt-4o-mini",  # any non gpt-5 to exercise temperature injection path

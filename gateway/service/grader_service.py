@@ -11,7 +11,7 @@ Responsibilities:
 import logging
 import time
 import grpc
-from gateway.config.models import ChatServiceResponse, ProblemFeedback, FeedbackSection
+from gateway.config.models import ChatServiceResponse, ProblemFeedback, FeedbackSection, FeedbackEnvelope, XYZEnvelope
 from gateway.grader.v1 import grader_pb2, grader_pb2_grpc
 from gateway.providers.provider_registry import get_provider
 from gateway.service.chat_service import ChatService
@@ -112,12 +112,13 @@ class GraderService(grader_pb2_grpc.GraderServicer):
             model_start = time.perf_counter()
 
             # 3) Delegate grading to ChatService
-            response: ChatServiceResponse = await chat_service.grade(
+            response: ChatServiceResponse = await chat_service.chat(
                 system_prompt=request.system_prompt,
                 user_prompt=request.user_prompt,
                 model_name=request.model_name,
                 trace_id=request.trace_id,
                 job_id=request.job_id,
+                envelope_model=FeedbackEnvelope
             )
 
             # 4) Log Finish

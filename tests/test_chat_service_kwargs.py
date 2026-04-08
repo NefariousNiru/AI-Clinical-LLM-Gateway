@@ -65,7 +65,7 @@ async def test_openai_non_gpt5_includes_temperature(monkeypatch):
     monkeypatch.setattr(chat_service_mod, "AsyncInstructor", CapturingInstructor)
 
     svc = ChatService(raw)
-    _ = await svc.grade(
+    _ = await svc.chat(
         system_prompt="s", user_prompt="u", model_name="gpt-4o-mini", trace_id="t", job_id="j"
     )
     kw = fake.last_kwargs
@@ -83,7 +83,7 @@ async def test_openai_gpt5_omits_temperature(monkeypatch):
     monkeypatch.setattr(chat_service_mod, "AsyncInstructor", CapturingInstructor)
 
     svc = ChatService(raw)
-    _ = await svc.grade(
+    _ = await svc.chat(
         system_prompt="s", user_prompt="u", model_name="gpt-5-turbo", trace_id="t", job_id="j"
     )
     kw = fake.last_kwargs
@@ -98,7 +98,7 @@ async def test_anthropic_includes_max_tokens(monkeypatch):
     monkeypatch.setattr(chat_service_mod, "AsyncInstructor", CapturingInstructor)
 
     svc = ChatService(raw)
-    _ = await svc.grade(
+    _ = await svc.chat(
         system_prompt="s", user_prompt="u", model_name="claude-3-haiku", trace_id="t", job_id="j"
     )
     kw = fake.last_kwargs

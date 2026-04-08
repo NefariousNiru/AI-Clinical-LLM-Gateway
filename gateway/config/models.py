@@ -5,6 +5,8 @@ Pydantic models used for typed LLM responses and envelopes.
 """
 
 from dataclasses import dataclass
+from typing import TypeVar, Generic
+
 from pydantic import BaseModel, Field, constr
 from gateway.util.enums import EmbeddingSectionType
 
@@ -47,7 +49,26 @@ class ProblemFeedback(BaseModel):
     monitoring: FeedbackSection
 
 
-class FeedbackEnvelope(BaseModel):
+class Envelope(BaseModel):
+    """
+    Envelope super class
+
+    Attributes:
+        error (bool): set true if any problem is encountered during generation. Defaults to False.
+        errors (list[str]): human-readable reasons describing the error condition.
+    """
+
+    error: bool = Field(
+        default=False,
+        description="Flag to set true if any problem is encountered.",
+    )
+    errors: list[str] = Field(
+        default_factory=list,
+        description="Human-readable reasons for error",
+    )
+
+
+class FeedbackEnvelope(Envelope):
     """
     FeedbackEnvelope payload.
 
@@ -58,24 +79,35 @@ class FeedbackEnvelope(BaseModel):
     """
 
     feedback: ProblemFeedback
-    error: bool = Field(
-        default=False,
-        description="Flag to set true if any problem is encountered.",
-    )  # When error == True, 'feedback' may be empty and 'errors' should explain why.
-    errors: list[str] = Field(default_factory=list, description="Human-readable reasons for error")
 
 
-class ChatServiceResponse(BaseModel):
+class XYZEnvelope(Envelope):
+    """
+    Some Envelope payload.
+    Placeholder
+    Attributes:
+        some_attribute (str): dummy placeholder
+        error (bool): set true if any problem is encountered during generation. Defaults to False.
+        errors (list[str]): human-readable reasons describing the error condition.
+    """
+
+    some_attribute: str
+
+
+EnvelopeT = TypeVar("EnvelopeT", bound=Envelope)
+
+
+class ChatServiceResponse(BaseModel, Generic[EnvelopeT]):
     """
     ChatServiceResponse payload.
 
     Attributes:
-        envelope (FeedbackEnvelope): top-level response container.
+        envelope (EnvelopeT): top-level response container.
         input_tokens (int): number of tokens consumed for input.
         output_tokens (int): number of tokens produced in the output.
     """
 
-    envelope: FeedbackEnvelope
+    envelope: EnvelopeT
     input_tokens: int
     output_tokens: int
 
