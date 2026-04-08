@@ -187,6 +187,13 @@ class ChatService:
             # Anthropic Requires max_tokens
             kwargs["max_tokens"] = settings.anthropic_max_tokens
 
+        import json
+        response_model = kwargs["response_model"]
+        print("\nResponse model class:")
+        print(response_model)
+        print("\nResponse model JSON schema:")
+        print(json.dumps(response_model.model_json_schema(), indent=2, default=str))
+
         # 4) Invoke and receive (pydantic model, raw completion)
         envelope, completion = await self.client.chat.completions.create_with_completion(**kwargs)
 
