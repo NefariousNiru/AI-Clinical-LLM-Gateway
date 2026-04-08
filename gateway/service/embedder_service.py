@@ -15,8 +15,7 @@ Notes:
     - This service is OpenAI-only.
     - The embedding model is fixed to `text-embedding-3-large`.
     - Minibatching is based on the combined token count of:
-        student_answer_text + feedback_text
-      for each row.
+        student_answer_text + feedback_text for each row.
     - A row that exceeds the configured per-request token cap by itself is dropped.
 """
 
