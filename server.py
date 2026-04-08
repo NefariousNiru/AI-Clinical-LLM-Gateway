@@ -20,8 +20,9 @@ from grpc import Server
 import gateway.util.logger as lg
 from gateway.auth_token_interceptor import AuthTokenInterceptor
 from gateway.config.settings import settings
+from gateway.embedding.v1 import embedding_pb2_grpc
 from gateway.grader.v1 import grader_pb2_grpc
-from gateway.service import grader_service
+from gateway.service import grader_service, embedder_service
 
 
 def _bind_port(server: Server, logger: Logger):
@@ -96,6 +97,7 @@ def build_server(logger: Optional[Logger] = None) -> grpc.aio.Server:
 
     # 4) Services
     grader_pb2_grpc.add_GraderServicer_to_server(grader_service.GraderService(), server)
+    embedding_pb2_grpc.add_EmbedderServicer_to_server(embedder_service.EmbedderService(), server)
 
     # 5) Networking
     _bind_port(server=server, logger=_logger)

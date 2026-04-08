@@ -309,3 +309,29 @@ def classify_exception(e: Exception) -> AppError:
         ErrorMessages.UNEXPECTED_ERROR,
         str(e),
     )
+
+
+def extract_error_headers(
+    error: OpenAIRateLimitError,
+) -> dict[str, str]:
+    """
+    Extract lower-cased headers from an OpenAI rate-limit exception.
+
+    Args:
+        error: OpenAI rate-limit exception.
+
+    Returns:
+        Dictionary of lower-cased header names to values.
+    """
+    # 1) Read response object if present.
+    response = getattr(error, "response", None)
+    if response is None:
+        return {}
+
+    # 2) Read headers if present.
+    raw_headers = getattr(response, "headers", None)
+    if raw_headers is None:
+        return {}
+
+    # 3) Normalize header names to lower case.
+    return {str(k).lower(): str(v) for k, v in raw_headers.items()}

@@ -4,7 +4,9 @@ file: gateway/config/models.py
 Pydantic models used for typed LLM responses and envelopes.
 """
 
+from dataclasses import dataclass
 from pydantic import BaseModel, Field, constr
+from gateway.util.enums import EmbeddingSectionType
 
 NonEmptyStr = constr(strip_whitespace=True, min_length=1)
 
@@ -76,3 +78,40 @@ class ChatServiceResponse(BaseModel):
     envelope: FeedbackEnvelope
     input_tokens: int
     output_tokens: int
+
+
+class EmbedRowRequest(BaseModel):
+    """
+    Extension (pydantic representation of embedding_pb2.EmbedRowRequest).
+
+    Attributes:
+        workup_id: Parent workup identifier.
+        submission_id: Student submission identifier.
+        disease_id: Disease / rubric identifier.
+        section_type: Which answer/feedback section this row represents.
+        student_answer_text: Plain student answer text for the section.
+        feedback_text: Plain feedback text for the section.
+    """
+
+    workup_id: int
+    submission_id: str
+    disease_id: str
+    section_type: EmbeddingSectionType
+    student_answer_text: str
+    feedback_text: str
+
+
+@dataclass(slots=True)
+class EmbedMiniBatch:
+    """
+    Minibatch container.
+
+    Attributes:
+        batch_index: Stable minibatch order index.
+        rows: Proto rows belonging to this minibatch.
+        total_tokens: Total estimated tokens across all texts in this minibatch.
+    """
+
+    batch_index: int
+    rows: list[EmbedRowRequest]
+    total_tokens: int
