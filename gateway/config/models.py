@@ -6,7 +6,6 @@ Pydantic models used for typed LLM responses and envelopes.
 
 from dataclasses import dataclass
 from typing import TypeVar, Generic
-
 from pydantic import BaseModel, Field, constr
 from gateway.util.enums import EmbeddingSectionType
 
@@ -83,7 +82,8 @@ class FeedbackEnvelope(Envelope):
 
 class XYZEnvelope(Envelope):
     """
-    Some Envelope payload.
+    Some Envelope payload. similar to Feedback Envelope
+    A possible next would be CLusterInsights model, rename this and add attributes
     Placeholder
     Attributes:
         some_attribute (str): dummy placeholder
